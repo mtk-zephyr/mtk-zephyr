@@ -3481,6 +3481,25 @@ MIPS arch:
   tests:
     - arch.mips
 
+MediaTek Platforms:
+  status: maintained
+  maintainers:
+    - aary-p
+  collaborators:
+    - andrew-mtk
+    - ffreimann-mtk
+  files:
+    - boards/mediatek/
+    - soc/mediatek/
+    - drivers/*/*mtk*
+    - dts/bindings/*/mediatek,*
+  labels:
+    - "platform: MediaTek"
+  description: >-
+    MediaTek MT8xxx SoCs and boards, covering both the Xtensa audio DSPs
+    found in Chromebook-class parts and the Arm application processors on
+    Genio development boards, together with MediaTek-specific drivers.
+
 Memory Management:
   status: maintained
   maintainers:
