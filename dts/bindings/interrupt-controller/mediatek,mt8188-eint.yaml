@@ -1,0 +1,25 @@
+# Copyright 2025 MediaTek
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  MediaTek MT8188 external interrupt controller.
+
+  Multiplexes the per-pin external interrupt lines onto a single parent
+  interrupt.  GPIO banks reference this controller to register for events on
+  their pins.
+
+compatible: "mediatek,mt8188-eint"
+
+include: [base.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  num-lines:
+    type: int
+    required: true
+    description: Number of external interrupt lines implemented.
