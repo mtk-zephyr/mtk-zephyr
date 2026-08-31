@@ -3491,8 +3491,12 @@ MediaTek Platforms:
   files:
     - boards/mediatek/
     - soc/mediatek/
+    - drivers/*/*mt8*
     - drivers/*/*mtk*
+    - dts/arm64/mediatek/
     - dts/bindings/*/mediatek,*
+    - include/zephyr/dt-bindings/*/mt8*
+    - include/zephyr/dt-bindings/*/mtk*
   labels:
     - "platform: MediaTek"
   description: >-
