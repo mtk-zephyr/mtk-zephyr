@@ -12,5 +12,10 @@ if(CONFIG_SOC_MT8188_ADSP)
 endif()
 
 if(CONFIG_SOC_MT8188_A55)
+  # pinctrl_soc.h, included by the pinctrl framework, lives in the cluster dir.
+  zephyr_include_directories(a55)
+
+  zephyr_sources_ifdef(CONFIG_ARM_MMU a55/mmu_regions.c)
+
   set(SOC_LINKER_SCRIPT ${ZEPHYR_BASE}/include/zephyr/arch/arm64/scripts/linker.ld CACHE INTERNAL "")
 endif()
