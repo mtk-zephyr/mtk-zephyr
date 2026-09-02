@@ -1,0 +1,33 @@
+# ADSP .config diffs: origin/main base vs mtk-genio-dev (19 commits)
+# Generated 2026-09-02T22:05:42Z
+
+=== mt8186_mt8186_adsp ===
+removed: 0   added: 3
+> CONFIG_SOC_FAMILY="mt8xxx"
+> CONFIG_SOC_MTK_ADSP=y
+> CONFIG_SOC_MT8186_ADSP=y
+
+=== mt8188_mt8188_adsp ===
+removed: 0   added: 3
+> CONFIG_SOC_FAMILY="mt8xxx"
+> CONFIG_SOC_MTK_ADSP=y
+> CONFIG_SOC_MT8188_ADSP=y
+
+=== mt8195_mt8195_adsp ===
+removed: 0   added: 3
+> CONFIG_SOC_FAMILY="mt8xxx"
+> CONFIG_SOC_MTK_ADSP=y
+> CONFIG_SOC_MT8195_ADSP=y
+
+=== mt8196_mt8196_adsp ===
+removed: 0   added: 3
+> CONFIG_SOC_FAMILY="mt8xxx"
+> CONFIG_SOC_MTK_ADSP=y
+> CONFIG_SOC_MT8196_ADSP=y
+
+=== mt8365_mt8365_adsp ===
+removed: 0   added: 3
+> CONFIG_SOC_FAMILY="mt8xxx"
+> CONFIG_SOC_MTK_ADSP=y
+> CONFIG_SOC_MT8365_ADSP=y
+

@@ -1,0 +1,27 @@
+An exception occurred in LicenseAndCopyrightCheck:
+Traceback (most recent call last):
+  File "/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py", line 3019, in _run_test
+    test.run()
+  File "/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py", line 1998, in run
+    self._check_documented_exceptions(project, changed_files)
+  File "/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py", line 2013, in _check_documented_exceptions
+    for file, licenses in undocumented(project, changed_files):
+  File "/home/lab/zephyrproject/zephyr/scripts/list_undocumented_licenses.py", line 105, in undocumented
+    exceptions = documented_exceptions(project)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lab/zephyrproject/zephyr/scripts/list_undocumented_licenses.py", line 86, in documented_exceptions
+    return [item for item in toml.annotations if MARKER_KEY in item.custom_properties]
+                                                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "<attrs generated getattr reuse.global_licensing.AnnotationsItem>", line 11, in __getattr__
+    return super().__getattribute__(item)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AnnotationsItem' object has no attribute 'custom_properties'
+WARNING : Test MmuRegionsCheck warning: 
+MmuRegionsCheck:Non-GIC device MMU region entry. Drivers should use the device MMIO API (DEVICE_MMIO_ROM / DEVICE_MMIO_MAP) instead of static MMU region entries. If this is SoC infrastructure without a struct device (e.g. clock control, IOMUXC), document the reason in a comment.
+File:soc/mediatek/mt8xxx/mt8188/a55/mmu_regions.c
+Line:17
+Completed BinaryFiles                    tests in /home/lab/zephyrproject/zephyr
+Completed BoardYml                       tests in /home/lab/zephyrproject/zephyr
+Completed CMakeStyle                     tests in /home/lab/zephyrproject/zephyr
+Completed SysbuildKconfigBasicNoModules  tests in /home/lab/zephyrproject/zephyr
+installed reuse version: 6.2.0 (scripts/requirements-base.txt pins reuse>=6.0.0)
