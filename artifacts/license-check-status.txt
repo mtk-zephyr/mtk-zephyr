@@ -1,0 +1,15 @@
+LicenseAndCopyrightCheck: status history on the build machine
+
+BEFORE (reuse 6.2.0 from PyPI) - crashed, reported nothing:
+  AttributeError: 'AnnotationsItem' object has no attribute 'custom_properties'
+  scripts/list_undocumented_licenses.py:86 -> reuse.global_licensing.AnnotationsItem
+  Reproduced identically on a bare upstream commit => environmental.
+
+AFTER (reuse @ codeberg f94ae0b1bb1d4d2ea91f49df88f3184c5d781a1d, force-reinstalled):
+  LicenseAndCopyrightCheck: PASSED
+  check_compliance.py -c origin/main..bfaca73809d  ->  exit 0, crashes: 0
+
+NOTE: the pinned revision also reports version 6.2.0, so a plain
+  'pip install <url>' says 'already satisfied' and does nothing.
+  --force-reinstall --no-deps is required.
+  Verify by attribute: 'custom_properties' in attrs.fields(AnnotationsItem)

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<testsuites tests="34" failures="2" errors="0" skipped="3" time="0.0">
-	<testsuite name="Compliance" tests="34" errors="0" failures="2" skipped="3" time="0">
+<testsuites tests="34" failures="1" errors="0" skipped="3" time="0.0">
+	<testsuite name="Compliance" tests="34" errors="0" failures="1" skipped="3" time="0">
 		<testcase name="Kconfig" classname="Guidelines"/>
 		<testcase name="KconfigBasic" classname="Guidelines"/>
 		<testcase name="KconfigBasicNoModules" classname="Guidelines"/>
@@ -28,26 +28,7 @@
 		<testcase name="ImageSize" classname="Guidelines"/>
 		<testcase name="KconfigFormat" classname="Guidelines"/>
 		<testcase name="KeepSorted" classname="Guidelines"/>
-		<testcase name="LicenseAndCopyrightCheck" classname="Guidelines">
-			<failure message="LicenseAndCopyrightCheck issues" type="failure">An exception occurred in LicenseAndCopyrightCheck:
-Traceback (most recent call last):
-  File &quot;/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py&quot;, line 3019, in _run_test
-    test.run()
-  File &quot;/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py&quot;, line 1998, in run
-    self._check_documented_exceptions(project, changed_files)
-  File &quot;/home/lab/zephyrproject/zephyr/./scripts/ci/check_compliance.py&quot;, line 2013, in _check_documented_exceptions
-    for file, licenses in undocumented(project, changed_files):
-  File &quot;/home/lab/zephyrproject/zephyr/scripts/list_undocumented_licenses.py&quot;, line 105, in undocumented
-    exceptions = documented_exceptions(project)
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;/home/lab/zephyrproject/zephyr/scripts/list_undocumented_licenses.py&quot;, line 86, in documented_exceptions
-    return [item for item in toml.annotations if MARKER_KEY in item.custom_properties]
-                                                               ^^^^^^^^^^^^^^^^^^^^^^
-  File &quot;&lt;attrs generated getattr reuse.global_licensing.AnnotationsItem&gt;&quot;, line 11, in __getattr__
-    return super().__getattribute__(item)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'AnnotationsItem' object has no attribute 'custom_properties'</failure>
-		</testcase>
+		<testcase name="LicenseAndCopyrightCheck" classname="Guidelines"/>
 		<testcase name="MaintainersFormat" classname="Guidelines"/>
 		<testcase name="MmuRegionsCheck" classname="Guidelines">
 			<failure message="soc/mediatek/mt8xxx/mt8188/a55/mmu_regions.c:17 Non-GIC device MMU region entry. Drivers should use the device MMIO API (DEVICE_MMIO_ROM / DEVICE_MMIO_MAP) instead of static MMU region entries. If this is SoC infrastructure without a struct device (e.g. clock control, IOMUXC), document the reason in a comment." type="warning">
