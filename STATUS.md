@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-02 (second update)
+# STATUS — as of 2026-09-02 (third update: first hardware run)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -8,132 +8,136 @@ overwritten on every update; `git log` on this branch is the history.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | `bfaca73809d` | 19 commits (drop 2026-09-02) | builds + full compliance, **no hardware** |
-| `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds + compliance, **no hardware** |
+| `mtk-genio-dev` | `bfaca73809d` | 19 commits (drop 2026-09-02) | builds, full compliance, **and hardware** |
+| `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
 
-Tag `verified/2026-09-02` pins the tested `mtk-genio-dev` SHA. Its message predates the license-check
-fix below; license/copyright is now verified for that same SHA.
+## Hardware — first run done, both silent-failure risks cleared
 
-## What is verified on `mtk-genio-dev` (`bfaca73809d`)
+The board on the bench is a **Genio 510 EVK**. The Genio 700 has never been connected.
 
-| Gate | Result |
-|---|---|
-| `git am` of all 19 patches onto `origin/main` | clean, no conflicts |
-| `mt8390_genio_700_evk/mt8188/a55` | PASS — RAM 144 KB / 2 MB |
-| `mt8370_genio_510_evk/mt8188/a55` | PASS — RAM 144 KB / 2 MB |
-| `west boards \| grep genio` | both boards listed |
-| 5 ADSP targets (mt8186/8188/8195/8196/8365) | PASS on branch and on base |
-| ADSP behaviour neutrality | 0 config removals, **loadable binaries byte-identical** to base, all five |
-| `check_compliance.py -c origin/main..HEAD` | **exit 0**, no crashes, 1 warning (see findings) |
-| `LicenseAndCopyrightCheck` | **PASSED** — see "recently fixed" below |
-| `checkpatch.pl -g origin/main..HEAD` | 0 errors, 0 warnings across all 19 |
-| `get_maintainer.py` on both `board.yml` | resolves to MediaTek Platforms / aary-p |
-| Subject lengths | all within 75 (longest exactly 75) |
-| Author / committer | `Aary Patil <aary.patil@mediatek.com>` on all 19 |
-
-## Recently fixed: the license check now works
-
-`LicenseAndCopyrightCheck` previously **crashed** on `reuse` 6.2.0 from PyPI. Installing the exact
-revision upstream CI pins (`scripts/requirements-actions.txt:1360`) fixes it, and the check now runs
-and passes.
-
-**It must be force-reinstalled.** The pinned revision reports version `6.2.0` — the same string as
-the broken release — so a plain `pip install` reports "already satisfied" and does nothing while the
-check keeps crashing:
-
-```bash
-pip install --force-reinstall --no-deps \
-  'reuse @ https://codeberg.org/fsfe/reuse-tool/archive/f94ae0b1bb1d4d2ea91f49df88f3184c5d781a1d.tar.gz'
+```
+4x Cortex-A55 (0xd05) + 2x Cortex-A78 (0xd41) = 6 CPUs
+Zephyr holds CPU 3 (an A55); Linux holds 0-2, 4-5
 ```
 
-Verify by attribute, not version: `custom_properties` must be a field of
-`reuse.global_licensing.AnnotationsItem`.
+| Result | Detail |
+|---|---|
+| Genio 510 boots its own image in its own cell | banner `Hello World! mt8370_genio_510_evk/mt8188/a55` |
+| **`cntfrq = 13000000`** | confirms `SYS_CLOCK_HW_CYCLES_PER_SEC = 13000000`; **no amendment needed** |
+| **`k_sleep(K_SECONDS(5))` = 5.004 s** | host wall clock, 0.08% error; **confirms the `IRQ_TYPE_LEVEL` arch-timer fix** |
+| **`mtk-v4.4.2` image boots** | `v4.4.2-18-gc4333dd7d9c2`; **confirms the GIC MMU restore** |
+| MT8370 has four A55 | silicon agrees with the datasheet reasoning behind the six-core dtsi change |
 
-## What is NOT verified — read before writing any PR description
+Timer accuracy was measured against the **host**, not `k_uptime_get()` — the latter derives from the
+timer under test and cannot detect a misconfigured one.
 
-**Hardware: nothing at all.** The board is not connected. No boot has ever been performed on either
-Genio 700 or Genio 510, on either branch. Two changes have failure modes **no build can detect**:
+## Still not tested on hardware
 
-- **`IRQ_TYPE_LEVEL` in the MT8188 dtsi.** Zephyr's GIC flags cell encodes only level-vs-edge, and
-  Linux's `IRQ_TYPE_LEVEL_HIGH` shares a value with `IRQ_TYPE_EDGE`. Wrong here means arch-timer PPIs
-  are edge-triggered — visible only as inaccurate `k_sleep`, never as a compile error.
-- **The GIC MMU restore on `mtk-v4.4.2`.** Silent fault during interrupt setup, before the console
-  exists. Needs a boot **on that branch specifically**; a boot on `mtk-genio-dev` proves nothing,
-  since that branch does not carry those entries.
+- **UART RX.** `hello_world` only prints; it never reads. TX only so far.
+- **Runtime UART reconfigure** (`UART_USE_RUNTIME_CONFIGURE`).
+- **`tests/drivers/uart/*`.**
+- **Interrupt delivery under sustained load** — same root cause as the timer fix, on the UART SPI.
+- **Cell shutdown/restart as a deliberate test.** Cells were destroyed and recreated many times
+  without incident, but that was incidental.
+- **The entire Genio 700 board.** All results above are 510 silicon. The 700 has six A55 cores rather
+  than four, so the dtsi's extra cores are exercised only there.
 
-**`cntfrq` unconfirmed.** Needs `printk("cntfrq = %u\n", sys_clock_hw_cycles_per_sec());` on a booted
-board. If it is not 13 MHz, fold the fix into `GENIO: soc: mediatek: mt8188: add the a55 cpucluster`.
+## Trap: an absent console is ambiguous on this platform
+
+The first `mtk-v4.4.2` boot attempt produced no output — which is exactly what a failed GIC mapping
+looks like. It was not: the host-side UART logger had been killed and nothing was capturing.
+
+**Before treating silence as a result, confirm the logger holds the port** (`fuser /dev/ttyUSB0`).
+"No console output" is both a legitimate failure signature and the signature of a dead capture, and
+they are indistinguishable from the log alone.
 
 ## Open findings
 
 | # | Finding | State |
 |---|---|---|
-| 1 | `MmuRegionsCheck` warns on the PINCTRL entry in `mt8188/a55/mmu_regions.c`. The checker flags every added `MT_DEVICE` entry unconditionally; a comment does not silence it. | **decided: keep the mapping**, defend upstream. Four other arm64 SoCs do the same; `pinctrl_configure_pins()` runs at `PRE_KERNEL_1` with no `struct device`. |
-| 2 | PR A blocked on board docs: **28** `TODO(` markers here (13 + 15) and **0** board `.webp` files. Authoring side's local tree is at 6 and 2; fixes arrive with a future drop. | blocking PR A |
-| 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later. No longer flagged as an issue. |
+| 1 | `MmuRegionsCheck` warns on the PINCTRL entry in `mt8188/a55/mmu_regions.c`. The checker flags every added `MT_DEVICE` entry unconditionally; a comment does not silence it. | **decided: keep the mapping**, defend upstream |
+| 2 | PR A blocked on board docs: **28** `TODO(` markers here (13 + 15) and **0** board `.webp` files. Authoring side's tree is at 6 and 2; fixes arrive with a future drop. | blocking PR A |
+| 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later |
+| 4 | `verified/*` annotated tags shadow the SHA in the boot banner via `git describe`. Make them lightweight to keep both. | open, cosmetic but affects provenance |
 
-## Standing rule — GIC entries and `MmuRegionsCheck`
+## Provenance of a binary
 
-`MmuRegionsCheck` decides the GIC is arch-mapped by testing only whether the file includes
-`arch/arm64/arm_mmu.h`. It does not check whether the base actually maps the GIC.
+The boot banner carries the source SHA — except where an annotated tag shadows it:
 
-**On any base whose `arch/arm64/core/mmu.c` lacks `mmu_gic_regions`, a "redundant GIC entry" finding
-is a false positive and the entries must stay.** Removing them there causes a silent fault with no
-console output — this is exactly how the original v4.4.2 bug was introduced.
-
-Test the base, never the branch name:
-
-```bash
-git show <ref>:arch/arm64/core/mmu.c | grep -c mmu_gic_regions   # 0 => entries are required
+```
+git describe                        -> verified/2026-09-02        (no SHA)
+git describe --exclude='verified/*' -> v4.4.0-13857-gbfaca73809d
 ```
 
-Note the check **does not exist** in v4.4.2's own `check_compliance.py`, so it cannot fire on that
-branch today. The rule applies at migration time, or if a newer checker is pointed at that tree.
+Until `verified/*` is made lightweight, **the md5 of `zephyr.bin` is the reliable identifier**. Every
+hardware report should quote it — a SHA says what should have been built, not what was.
 
-## Doc gates for PR A
+## Images on the board, in `/root/claude_aary`
 
-Both must hold:
+| File | Branch | Built for | md5 |
+|---|---|---|---|
+| `zephyr-g510.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8370_genio_510_evk` | `1b218ad402b0ea77eb56b9edb743c114` |
+| `zephyr-g700.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8390_genio_700_evk` | `646cbf1c9d4b32d5a6759f9b4b908ff0` |
+| `zephyr-g510-cntfrq.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8370_genio_510_evk` | `5abb17a0f24303edd31189ea9ed124e5` |
+| `zephyr-v442-g700.bin` | `mtk-v4.4.2` `c4333dd7d9c` | `mt8390_genio_700_evk` | `9c4e65f642c170d0138c46326cb14f8c` |
 
-```bash
-grep -rc 'TODO(' boards/mediatek/ | grep -v ':0'      # expect no output
-ls boards/mediatek/*/doc/img/*.webp | wc -l           # expect 2
-```
+`README.md` and `setup-g510.sh` are alongside. The board is left running `zephyr-g510.bin`.
 
-The second is not redundant: `gen_boards_catalog.py` falls back through `**/*.{ext}`, so if one board
-photo is missing the other board's image is displayed silently, which a `TODO(` grep cannot detect.
+**The pre-existing `setup.sh` is wrong for this board**: it enables the 510 root cell but creates
+`genio-700-evk-zephyr.cell` and loads the 700 image. It boots — the parts are pin-compatible — but
+the banner then reports the 700 board on 510 hardware. Left unmodified; use `setup-g510.sh`.
 
-## Environment notes that affect how results should be read
+## Reproducing the hardware tests — `scripts/`
 
-- **The west workspace tracks one branch's manifest at a time.** Building a branch without a matching
-  `west update` produces phantom failures in unrelated modules. Every build result here came from a
-  matched workspace.
-- **`check_compliance.py` defaults to `HEAD~1..HEAD`** — one commit. All runs here pass
-  `-c <base>..HEAD` explicitly.
-- **Interactive git flags are unavailable** on the build machine — no `git rebase -i`, including
-  `--autosquash`. Fixes are folded into commits by detach → amend → cherry-pick replay.
-- Toolchain: `clang-format` 22.1.0, Zephyr SDK 1.0.1 (aarch64 + Xtensa), `reuse` at the CI-pinned
-  revision.
+| File | Purpose |
+|---|---|
+| `hwtest-main.c` | drop-in `samples/hello_world/src/main.c`: prints `cntfrq`, then three `SLEEP_START`/`SLEEP_END` pairs |
+| `uartlog.py` | host-side logger, timestamps each line on arrival — the external clock the sleep test needs |
+| `setup-g510.sh` | board-side: tear down, create the 510 cell, load at `0x8000`, start |
 
-## Division of work
+Console is UART1 at 115200 on **CN3201**, FTDI adapter at `/dev/ttyUSB0`. Only one process can hold
+the port (`picocom` is built with `USE_FLOCK`), so the logger and an interactive `picocom` cannot run
+at once.
 
-The authoring side can now run `check_compliance.py` (minus the license check and eight
-workspace-dependent checks) and `checkpatch.pl`. Builds, the workspace-dependent gates and hardware
-remain only on the build machine, and are run in full rather than trusting an upstream pass.
+## Verified build gates on `mtk-genio-dev` (`bfaca73809d`)
 
-If the authoring side gains adb access to the boards, the proposed split is: build machine produces
-`zephyr.bin` and owns anything that amends a commit; authoring side drives the boards for
-observational tests. **Every hardware report must quote the md5 of the `zephyr.bin` actually loaded**,
-not just the source SHA — a SHA identifies what should have been built, not what was, and a stale
-image is otherwise indistinguishable from a real regression.
+| Gate | Result |
+|---|---|
+| `git am` of all 19 patches onto `origin/main` | clean |
+| both Arm boards + 5 ADSP targets | PASS |
+| ADSP behaviour neutrality | 0 config removals, loadable binaries byte-identical, all five |
+| `check_compliance.py -c origin/main..HEAD` | exit 0, 1 warning (PINCTRL, accepted) |
+| `LicenseAndCopyrightCheck` | PASSED (needs the CI-pinned `reuse`, force-reinstalled) |
+| `checkpatch.pl -g origin/main..HEAD` | 0 errors, 0 warnings |
+
+## Environment notes
+
+- **The west workspace tracks one branch's manifest at a time.** Building without a matching
+  `west update` produces phantom failures in unrelated modules.
+- **`check_compliance.py` defaults to `HEAD~1..HEAD`** — one commit. Always pass `-c <base>..HEAD`.
+- **Interactive git flags are unavailable** — no `git rebase -i`, including `--autosquash`.
+- `reuse` must be **force-reinstalled** from the CI-pinned tarball; the fixed revision reports the
+  same version string as the broken release, so plain `pip install` silently does nothing.
+- Toolchain: `clang-format` 22.1.0, Zephyr SDK 1.0.1 (aarch64 + Xtensa).
 
 ## The two branches differ on purpose
-
-Four files are deliberately **not** identical, because `mtk-v4.4.2` sits on a release tag predating
-several upstream changes. A file being identical on both is not reassurance — it may be the bug.
 
 | File | `mtk-genio-dev` | `mtk-v4.4.2` |
 |---|---|---|
 | `drivers/serial/uart_mtk_common.{c,h}` | `void uart_mtk_irq_update()` | `int`, `return 1` |
 | `soc/mediatek/mt8xxx/Kconfig` | `SOC_MTK_ADSP` selects `CPU_HAS_DCACHE`, `ARCH_HAS_NOCACHE_MEMORY_SUPPORT` | neither select exists |
 | `soc/mediatek/mt8xxx/Kconfig.defconfig` | `configdefault DCACHE` | `config DCACHE` / `default y` |
-| `soc/mediatek/mt8xxx/mt8188/a55/mmu_regions.c` | pin controller only (arch core maps the GIC) | pin controller **plus both GIC banks** |
+| `soc/mediatek/mt8xxx/mt8188/a55/mmu_regions.c` | pin controller only | pin controller **plus both GIC banks** |
+
+The last row is now hardware-proven on both sides: `mtk-genio-dev` boots without the GIC entries
+(the arch core maps them), and `mtk-v4.4.2` boots with them.
+
+**On any base whose `arch/arm64/core/mmu.c` lacks `mmu_gic_regions`, a "redundant GIC entry" finding
+is a false positive and the entries must stay.** Test the base, never the branch name:
+
+```bash
+git show <ref>:arch/arm64/core/mmu.c | grep -c mmu_gic_regions   # 0 => entries required
+```
+
+Note the check does not exist in v4.4.2's own `check_compliance.py`, so it cannot fire there today.
+The rule applies at migration time.
