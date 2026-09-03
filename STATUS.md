@@ -35,14 +35,30 @@ the hardware it was built for.
 Timer accuracy was measured against the **host**, not `k_uptime_get()` — the latter derives from the
 timer under test and cannot detect a misconfigured one.
 
+## UART and interrupt tests — all pass on the Genio 700
+
+| Test | Result |
+|---|---|
+| UART RX echo, 64 / 2000 / 8000 bytes | **PASS**, byte-for-byte identical |
+| Interrupt load | **PASS** — `rx=10065 isr=10065`, zero bytes lost |
+| Runtime reconfigure | **PASS**, verified on the wire incl. a negative control |
+| `tests/drivers/uart/uart_basic_api` | **PASS 7/7** |
+| `tests/drivers/uart/uart_interrupt_api` | **PASS 1/1** |
+| Cell shutdown/restart cycling | **PASS**, 6/6 |
+
+`isr == rx` exactly: one interrupt per byte, RX FIFO trigger effectively 1. Not a bug; it does mean
+RX throughput is interrupt-bound (6.5 KiB/s of an 11.5 KiB/s line rate).
+
+The remaining `tests/drivers/uart/` suites are async-API, emul or dual-UART — the driver implements
+the interrupt-driven API and the board has one console UART, so they are **not applicable** rather
+than untested.
+
 ## Still not tested on hardware
 
-- **UART RX.** `hello_world` only prints; it never reads. TX only so far.
-- **Runtime UART reconfigure** (`UART_USE_RUNTIME_CONFIGURE`).
-- **`tests/drivers/uart/*`.**
-- **Interrupt delivery under sustained load** — same root cause as the timer fix, on the UART SPI.
-- **Cell shutdown/restart as a deliberate test.** Cells were destroyed and recreated many times
-  without incident, but that was incidental.
+- **The Genio 510 has not run the new tests** (RX, reconfigure, in-tree suites, load, cycling). It
+  passed everything that existed when it was on the bench. Images and scripts are branch-independent,
+  so re-running there is short — worth doing before the customer drop, since the 510 is the part that
+  ships.
 - **SMP / multiple A55 cores.** Not supported as built: the Jailhouse cell assigns one CPU, the board
   dts disables five of six A55s, and `CONFIG_MP_MAX_NUM_CPUS=1`. The cell config lives outside the
   Zephyr tree, so this needs coordination with MediaTek's Jailhouse configs.
@@ -78,6 +94,7 @@ Board images were still refreshed to the new shape so future reports quote a sub
 | 2 | PR A blocked on board docs: **6** `TODO(` markers (3 per board) after the 2026-09-03 drop; both board `.webp` photos now present. The remaining three per board are Jailhouse facts only MediaTek can supply. | blocking PR A |
 | 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later |
 | 4 | `verified/*` annotated tags shadow the SHA in the boot banner via `git describe`. Make them lightweight to keep both. | open, cosmetic but affects provenance |
+| 5 | **Both board defconfigs set `CONFIG_DCACHE_LINE_SIZE_DETECT=y` and `CONFIG_ICACHE_LINE_SIZE_DETECT=y` (lines 8-9), which arm64 does not support.** Both are forced to `n` and emit a Kconfig warning on **every** build. Values land on the correct static default of 64 for Cortex-A55, so nothing is broken — but the lines are dead and upstream review will flag them. Fix: delete both from both defconfigs; keep `CONFIG_CACHE_MANAGEMENT=y`. | open, needs a fold into commits 14 and 15 |
 
 ## Provenance of a binary
 
