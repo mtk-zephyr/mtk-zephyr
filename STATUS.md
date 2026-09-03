@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-02 (third update: first hardware run)
+# STATUS — as of 2026-09-03 (drop 2026-09-03 applied, not pushed)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -8,7 +8,7 @@ overwritten on every update; `git log` on this branch is the history.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | `bfaca73809d` | 19 commits (drop 2026-09-02) | builds, full compliance, **and hardware** |
+| `mtk-genio-dev` | **local `0d9156ec50b`**, remote still `bfaca73809d` | 19 commits (drop 2026-09-03 applied locally, **not pushed**) | builds, full compliance, and hardware |
 | `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
 
 ## Hardware — first run done, both silent-failure risks cleared
@@ -51,12 +51,26 @@ looks like. It was not: the host-side UART logger had been killed and nothing wa
 "No console output" is both a legitimate failure signature and the signature of a dead capture, and
 they are indistinguishable from the log alone.
 
+## Does the hardware evidence still apply after the 2026-09-03 drop? Yes
+
+The drop rewrote commits 10-19, but changed **no compiled source** — only `doc/index.rst` and two
+`.webp` files. Rebuilding and comparing against the images actually booted:
+
+```
+12 bytes differ out of 57468, at offsets 52604-52615
+= exactly the 12-hex-digit abbreviated SHA in the boot banner
+  bfaca73809d2 -> 0d9156ec50b9
+```
+
+Every other byte is identical, so `cntfrq`, timer accuracy and boot results carry over unchanged.
+Board images were still refreshed to the new shape so future reports quote a submitted-history md5.
+
 ## Open findings
 
 | # | Finding | State |
 |---|---|---|
 | 1 | `MmuRegionsCheck` warns on the PINCTRL entry in `mt8188/a55/mmu_regions.c`. The checker flags every added `MT_DEVICE` entry unconditionally; a comment does not silence it. | **decided: keep the mapping**, defend upstream |
-| 2 | PR A blocked on board docs: **28** `TODO(` markers here (13 + 15) and **0** board `.webp` files. Authoring side's tree is at 6 and 2; fixes arrive with a future drop. | blocking PR A |
+| 2 | PR A blocked on board docs: **6** `TODO(` markers (3 per board) after the 2026-09-03 drop; both board `.webp` photos now present. The remaining three per board are Jailhouse facts only MediaTek can supply. | blocking PR A |
 | 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later |
 | 4 | `verified/*` annotated tags shadow the SHA in the boot banner via `git describe`. Make them lightweight to keep both. | open, cosmetic but affects provenance |
 
@@ -76,8 +90,8 @@ hardware report should quote it — a SHA says what should have been built, not 
 
 | File | Branch | Built for | md5 |
 |---|---|---|---|
-| `zephyr-g510.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8370_genio_510_evk` | `1b218ad402b0ea77eb56b9edb743c114` |
-| `zephyr-g700.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8390_genio_700_evk` | `646cbf1c9d4b32d5a6759f9b4b908ff0` |
+| `zephyr-g510.bin` | `mtk-genio-dev` `0d9156ec50b` | `mt8370_genio_510_evk` | `501853ffa9eeb7ef2721318fca01b951` |
+| `zephyr-g700.bin` | `mtk-genio-dev` `0d9156ec50b` | `mt8390_genio_700_evk` | `8ab837b80144f4f943decef7d970e4e1` |
 | `zephyr-g510-cntfrq.bin` | `mtk-genio-dev` `bfaca73809d` | `mt8370_genio_510_evk` | `5abb17a0f24303edd31189ea9ed124e5` |
 | `zephyr-v442-g700.bin` | `mtk-v4.4.2` `c4333dd7d9c` | `mt8390_genio_700_evk` | `9c4e65f642c170d0138c46326cb14f8c` |
 
@@ -99,12 +113,12 @@ Console is UART1 at 115200 on **CN3201**, FTDI adapter at `/dev/ttyUSB0`. Only o
 the port (`picocom` is built with `USE_FLOCK`), so the logger and an interactive `picocom` cannot run
 at once.
 
-## Verified build gates on `mtk-genio-dev` (`bfaca73809d`)
+## Verified build gates on `mtk-genio-dev` (`0d9156ec50b`)
 
 | Gate | Result |
 |---|---|
-| `git am` of all 19 patches onto `origin/main` | clean |
-| both Arm boards + 5 ADSP targets | PASS |
+| `git am` of the 10-patch drop onto commit 9 | clean; tree hash matched the authoring side's expected `da0392eb82e9` |
+| both Arm boards + 5 ADSP targets | PASS (g700 md5 `8ab837b8…`, g510 md5 `501853ff…`) |
 | ADSP behaviour neutrality | 0 config removals, loadable binaries byte-identical, all five |
 | `check_compliance.py -c origin/main..HEAD` | exit 0, 1 warning (PINCTRL, accepted) |
 | `LicenseAndCopyrightCheck` | PASSED (needs the CI-pinned `reuse`, force-reinstalled) |
