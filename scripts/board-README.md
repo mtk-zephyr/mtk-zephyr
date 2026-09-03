@@ -1,60 +1,58 @@
-# /root/claude_aary — Zephyr on Genio, build-machine notes
+# /root/claude_aary — Zephyr on Genio 510 EVK
 
-Updated 2026-09-03 by the build-machine agent. This board is a **Genio 510 EVK**
-(hostname genio-510-evk).
-
-## Images — rebuilt for the 2026-09-03 drop (mtk-genio-dev 0d9156ec50b)
-
-| File | Branch | Built for | md5 |
-|---|---|---|---|
-| zephyr-g510.bin | mtk-genio-dev 0d9156ec50b | mt8370_genio_510_evk | 501853ffa9eeb7ef2721318fca01b951 |
-| zephyr-g700.bin | mtk-genio-dev 0d9156ec50b | mt8390_genio_700_evk | 8ab837b80144f4f943decef7d970e4e1 |
-| zephyr-g510-cntfrq.bin | mtk-genio-dev bfaca73809d | mt8370_genio_510_evk | 5abb17a0f24303edd31189ea9ed124e5 |
-| zephyr-v442-g700.bin | mtk-v4.4.2 c4333dd7d9c | mt8390_genio_700_evk | 9c4e65f642c170d0138c46326cb14f8c |
-| zephyr.bin | (pre-existing, stale) | mt8390_genio_700_evk | 646cbf1c9d4b32d5a6759f9b4b908ff0 |
-
-zephyr-g510.bin and zephyr-g700.bin were refreshed so hardware evidence attaches
-to the SHAs we intend to submit. The cntfrq image is from the previous commit
-shape; it differs from the current one only in the 12-hex-digit SHA embedded in
-the boot banner, so its results still stand.
-
-Always check the md5 and quote it in any report. The boot banner also carries the
-source SHA, e.g. "build v4.4.0-13857-g0d9156ec50b9".
+Updated 2026-09-03 by the build-machine agent. Board: **Genio 510 EVK**
+(genio-510-evk), 4x Cortex-A55 + 2x Cortex-A78 = 6 CPUs. Zephyr gets CPU 3.
 
 ## Running
 
     ./setup-g510.sh [image]        # default zephyr-g510.bin
 
-Tears down any existing zephyr cell, creates the 510 inmate cell, loads at
-0x00008000, starts. Console UART1 115200 on CN3201.
+Console UART1 115200 on CN3201. Loads at 0x00008000 into
+genio-510-evk-zephyr.cell.
 
-## Careful: the original setup.sh is wrong for this board
+**jailhouse enable IS required from cold on this board.** The script does
+modprobe + enable before creating the inmate cell. An earlier version of this
+script omitted the enable and worked only because jailhouse happened to be
+running; after a power cycle it failed with
+"JAILHOUSE_CELL_CREATE: Invalid argument", which points away from the real cause.
+Note "jailhouse cell list" exits 0 even when jailhouse is disabled, so the guard
+greps for an actual cell row rather than testing the exit code.
 
-It enables the genio-510-evk root cell (correct) but creates
-genio-700-evk-zephyr.cell and loads the genio-700 image. It boots, because the
-parts are pin-compatible, but the banner then reports the 700 board on 510
-hardware. Left unmodified; use setup-g510.sh.
+## Images (all built from mtk-genio-dev 6e09950bf79)
 
-## Already verified on this board (build machine)
+| File | Purpose |
+|---|---|
+| zephyr-g510.bin | plain hello_world |
+| zephyr-g510-cntfrq.bin | cntfrq + three 5 s sleeps |
+| zephyr-g510-rxtest.bin | interrupt-driven echo + rx/isr counters |
+| zephyr-g510-reconf.bin | runtime baud change 115200 -> 9600 -> 115200 |
+| zephyr-g510-uartapi.bin | tests/drivers/uart/uart_basic_api |
+| zephyr-g510-uartirq.bin | tests/drivers/uart/uart_interrupt_api |
+| zephyr-g700.bin, zephyr-v442-g700.bin | older 700-board images, kept for reference |
 
-- Genio 510 boots its own image in its own cell:
-  banner "Hello World! mt8370_genio_510_evk/mt8188/a55"
-- cntfrq = 13000000 (13 MHz) -> SYS_CLOCK_HW_CYCLES_PER_SEC confirmed, no amend
-- k_sleep(K_SECONDS(5)) = 5.004 s by host wall clock -> IRQ_TYPE_LEVEL fix confirmed
-- mtk-v4.4.2 image boots -> GIC MMU restore confirmed on the customer branch
+Check md5 against the host build and quote it in any report; the boot banner also
+carries the source SHA.
 
-## Not yet tested
+## Verified on this board 2026-09-03 — all pass
 
-UART RX, runtime reconfigure (UART_USE_RUNTIME_CONFIGURE), tests/drivers/uart/*,
-interrupt delivery under sustained load, deliberate cell shutdown/restart, and
-the Genio 700 board itself (not connected).
+- boot, correct board string
+- cntfrq = 13000000
+- k_sleep(5 s) = 5.005 / 5.004 / 5.004 s by host wall clock
+- RX echo byte-for-byte at 64, 2000, 8000 bytes
+- interrupt load: rx=10065 isr=10065, zero bytes lost
+- runtime reconfigure verified on the wire, incl. unreadable-at-old-rate control
+- uart_basic_api 7/7, uart_interrupt_api 1/1
+- 6/6 cell shutdown/restart cycles
+
+Identical results to the Genio 700.
+
+## Not tested
+
+SMP / multiple A55 cores. Needs a Jailhouse cell assigning more than one CPU;
+cell configs live outside the Zephyr tree.
 
 ## Two traps
 
-1. An absent console is ambiguous. "No output" is both a real failure signature
-   and what a dead host-side logger looks like. Confirm the logger holds the port
-   (fuser /dev/ttyUSB0) before treating silence as a result.
-2. k_uptime_get() derives from the timer under test and cannot detect a
-   misconfigured one. Use host-side timestamps. The first line after boot can
-   arrive in a burst once the console comes up, making the first interval read
-   short; trust the second and third.
+1. "No console output" is both a real failure signature and what a dead host-side
+   logger looks like. Check fuser /dev/ttyUSB0 before treating silence as a result.
+2. k_uptime_get() derives from the timer under test. Use host-side timestamps.

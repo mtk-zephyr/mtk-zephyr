@@ -4,6 +4,7 @@ The suite is declared `harness: keyboard`, so twister cannot run it — it waits
 a human to type at the console. This supplies the keystrokes over the same serial
 line and collects the ztest verdicts.
 """
+import os
 import re
 import subprocess
 import sys
@@ -12,13 +13,15 @@ import time
 import serial
 
 PORT = '/dev/ttyUSB0'
-IMAGE = 'zephyr-g700-uartapi.bin'
+# Board-specific bits, overridable so the same driver serves both EVKs.
+SETUP = os.environ.get('SETUP', '/root/claude_aary/setup-g700.sh')
+IMAGE = os.environ.get('IMAGE', 'zephyr-g700-uartapi.bin')
 PROMPT = b'Please send characters to serial console'
 
 
 def restart_cell():
     subprocess.run(
-        ['adb', 'shell', f'/root/claude_aary/setup-g700.sh {IMAGE}'],
+        ['adb', 'shell', f'{SETUP} {IMAGE}'],
         capture_output=True, timeout=60,
     )
 
