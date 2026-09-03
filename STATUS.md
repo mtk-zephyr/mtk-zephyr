@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-03 (drop 2026-09-03 applied, not pushed)
+# STATUS — as of 2026-09-03 (drop pushed; both boards tested)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -8,25 +8,29 @@ overwritten on every update; `git log` on this branch is the history.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | **local `0d9156ec50b`**, remote still `bfaca73809d` | 19 commits (drop 2026-09-03 applied locally, **not pushed**) | builds, full compliance, and hardware |
+| `mtk-genio-dev` | `0d9156ec50b` | 19 commits (drop 2026-09-03) | builds, full compliance, **and hardware on both boards** |
 | `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
 
-## Hardware — first run done, both silent-failure risks cleared
-
-The board on the bench is a **Genio 510 EVK**. The Genio 700 has never been connected.
+## Hardware — both boards pass
 
 ```
-4x Cortex-A55 (0xd05) + 2x Cortex-A78 (0xd41) = 6 CPUs
-Zephyr holds CPU 3 (an A55); Linux holds 0-2, 4-5
+Genio 700 (MT8390):  6x Cortex-A55 + 2x Cortex-A78 = 8 CPUs
+Genio 510 (MT8370):  4x Cortex-A55 + 2x Cortex-A78 = 6 CPUs
 ```
 
-| Result | Detail |
-|---|---|
-| Genio 510 boots its own image in its own cell | banner `Hello World! mt8370_genio_510_evk/mt8188/a55` |
-| **`cntfrq = 13000000`** | confirms `SYS_CLOCK_HW_CYCLES_PER_SEC = 13000000`; **no amendment needed** |
-| **`k_sleep(K_SECONDS(5))` = 5.004 s** | host wall clock, 0.08% error; **confirms the `IRQ_TYPE_LEVEL` arch-timer fix** |
-| **`mtk-v4.4.2` image boots** | `v4.4.2-18-gc4333dd7d9c2`; **confirms the GIC MMU restore** |
-| MT8370 has four A55 | silicon agrees with the datasheet reasoning behind the six-core dtsi change |
+Both binnings match the silicon, so the six-core dtsi with the 510 board disabling `cpu@400`/`@500`
+is **positively confirmed on both parts**, not just inferred.
+
+| Result | Genio 700 | Genio 510 |
+|---|---|---|
+| Boots its own image in its own cell | PASS | PASS |
+| **`cntfrq`** | **13000000** | **13000000** |
+| **`k_sleep(K_SECONDS(5))`** vs host wall clock | **5.004 / 5.005 / 5.012 s** | **5.004 s** |
+| **`mtk-v4.4.2` image boots** | **PASS, natively** | PASS (cross-board) |
+
+`SYS_CLOCK_HW_CYCLES_PER_SEC = 13000000` confirmed on both parts — **no amendment needed**. The
+`IRQ_TYPE_LEVEL` arch-timer fix and the v4.4.2 GIC MMU restore are both confirmed, the latter now on
+the hardware it was built for.
 
 Timer accuracy was measured against the **host**, not `k_uptime_get()` — the latter derives from the
 timer under test and cannot detect a misconfigured one.
@@ -39,8 +43,9 @@ timer under test and cannot detect a misconfigured one.
 - **Interrupt delivery under sustained load** — same root cause as the timer fix, on the UART SPI.
 - **Cell shutdown/restart as a deliberate test.** Cells were destroyed and recreated many times
   without incident, but that was incidental.
-- **The entire Genio 700 board.** All results above are 510 silicon. The 700 has six A55 cores rather
-  than four, so the dtsi's extra cores are exercised only there.
+- **SMP / multiple A55 cores.** Not supported as built: the Jailhouse cell assigns one CPU, the board
+  dts disables five of six A55s, and `CONFIG_MP_MAX_NUM_CPUS=1`. The cell config lives outside the
+  Zephyr tree, so this needs coordination with MediaTek's Jailhouse configs.
 
 ## Trap: an absent console is ambiguous on this platform
 
