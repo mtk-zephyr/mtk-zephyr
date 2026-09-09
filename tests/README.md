@@ -28,6 +28,7 @@ lib/common.sh             board detection, port handling, build/flash helpers
 firmware/hwtest/          cntfrq + three 5 s sleeps
 firmware/rxtest/          interrupt-driven echo with rx/isr counters
 firmware/reconf/          runtime baud change 115200 -> 9600 -> 115200
+firmware/memtest/         6 MB .bss array proving the granted window
 host/uartlog.py           timestamping serial logger
 host/rxtest_host.py       drives the echo test, verifies byte-for-byte
 host/reconf_host.py       samples the console at each baud
@@ -47,6 +48,7 @@ logs/                     per-test logs, overwritten each run
 | Board | Genio 700 or 510 EVK over `adb`, auto-detected from `uname -n` |
 | Serial | `$PORT`, default `/dev/ttyUSB0`, 115200, console on **CN3201** |
 | Board dir | `$BOARD_DIR`, default `/root/claude_aary`, holding `setup-g*.sh` |
+| Cell dir | `$CELL_DIR`, unset by default so the board's `/usr/share/jailhouse/cells` is used. Set it to stage newly built cells without touching system files |
 
 Override any of them as environment variables.
 
@@ -237,6 +239,42 @@ Six shutdown → destroy → create → load → start cycles, counting banners.
 
 Expected: 6/6 clean boots with the right board string each time.
 
+### H8 — the declared memory window is actually granted
+
+Builds `firmware/memtest`, which places a 6 MB array in `.bss` so the linker
+extends the image across the window; boot-time `.bss` zeroing then touches every
+byte of it.
+
+Expected:
+
+```
+MEMTEST window base=0x8000 size=0x800000 (8 MB)
+MEMTEST probe array 6 MB at 0x27a80..0x627a7c
+MEMTEST DONE mismatches=0 -> PASS
+```
+
+**This is the only test that can distinguish an 8 MB Jailhouse grant from a
+2 MB one.** A plain boot cannot: `hello_world` never touches high addresses, so
+an over-declared window boots cleanly and faults later under memory pressure.
+If the grant is short, the cell drops to `failed` during `.bss` zeroing, before
+the console exists — so the symptom is *no output at all*, not an error message.
+
+A wrong way to write this test: simply writing to a high address in the declared
+window faults regardless of the grant, because `arch/arm64/core/mmu.c` maps
+`_image_ram_start`..`_image_ram_end` — the *image extent* — not the whole SRAM
+region. Growing `.bss` is what actually extends the mapping.
+
+Check the cells themselves with `tools/verify-jailhouse-cells.py`, which parses
+the binaries and compares the inmate window against what you expect:
+
+```bash
+python3 tools/verify-jailhouse-cells.py ~/claude/jailhouse-cells/*.cell
+```
+
+It only enforces the size on cells named `zephyr` — `uart-demo` is a different
+inmate with a legitimately small window — and checks that each root cell reserves
+at least what an inmate is expected to claim.
+
 ### Suites deliberately not run
 
 The rest of `tests/drivers/uart/` — `uart_async_api`, `uart_async_dual`,
@@ -270,48 +308,6 @@ test reports the port busy, something was left attached — `fuser -k /dev/ttyUS
 Also: the two boards use **different FTDI adapters** — `AB0PKARP` on the 700,
 `B001I8ZJ` on the 510 — but both enumerate as `/dev/ttyUSB0`. Use
 `/dev/serial/by-id/` if both are ever attached at once.
-
----
-
-## Not included yet
-
-**Memory-window probe.** A 6 MB `.bss` array that forces the image to span the
-declared window, so boot-time zeroing touches every byte. It is the only check
-that can distinguish an 8 MB Jailhouse grant from a 2 MB one — a plain boot
-cannot, because `hello_world` never touches high addresses.
-
-The source is kept at `firmware/memtest/` but is **deliberately not wired into
-`run-tests.sh`**, because it currently fails: the boards declare 8 MB while the
-installed cells grant 2 MB, so the cell drops to `failed` during `.bss` zeroing.
-Wire it in once the 8 MB cells are installed and it passes — it then becomes the
-check that confirms the new cells actually took effect.
-
-To run it by hand:
-
-```bash
-west build -p always -b <target> firmware/memtest -d build/memtest
-adb push build/memtest/zephyr/zephyr.bin /root/claude_aary/zephyr-memtest.bin
-adb shell '/root/claude_aary/setup-g700.sh zephyr-memtest.bin'
-```
-
-Expected once the cells grant 8 MB: `MEMTEST DONE mismatches=0 -> PASS`.
-Today: no console output at all and `jailhouse cell list` shows `failed`.
-
-Note a wrong way to write this test: simply writing to a high address in the
-declared window faults regardless of the grant, because
-`arch/arm64/core/mmu.c` maps `_image_ram_start`..`_image_ram_end` — the *image
-extent* — not the whole SRAM region. Growing `.bss` is what actually extends the
-mapping.
-
-`tools/verify-jailhouse-cells.py` inspects cell binaries and checks the inmate
-window against what the devicetree declares:
-
-```bash
-python3 tools/verify-jailhouse-cells.py ~/claude/jailhouse-cells/*.cell
-```
-
-It is shipped as a tool rather than wired into the run, since it tests the
-Jailhouse cells rather than the Zephyr tree.
 
 ---
 

@@ -100,6 +100,8 @@ Board images were still refreshed to the new shape so future reports quote a sub
 | 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later |
 | 4 | `verified/*` annotated tags shadow the SHA in the boot banner via `git describe`. Make them lightweight to keep both. | open, cosmetic but affects provenance |
 | 5 | Both board defconfigs set `CONFIG_DCACHE_LINE_SIZE_DETECT` / `CONFIG_ICACHE_LINE_SIZE_DETECT`, which arm64 does not support — dead lines warning on every build. | **FIXED**, folded into commits 14 and 15. Verified a no-op: 0 `.config` lines differ, line size still 64, warnings 2→0 |
+| 7 | **The 8 MB inmate window is real on the Genio 700.** New cells verified and installed; H8 passes with a 6 MB `.bss` array spanning `0x27a80..0x627a7c`, three times past the old 2 MB ceiling. All 9 hardware tests pass. | resolved on the 700; 510 pending |
+| 8 | **Four rpmsg cell configs were NOT updated**: `genio-{700,510}-evk-zephyr_rpmsg_{native,openamp}.cell` still grant 2 MB while the boards declare 8 MB. Running Zephyr under an rpmsg cell reacquires the latent fault. The plain and AFE cells are correct. | open, MediaTek-side |
 | 6 | `jailhouse enable` **is required from cold on both boards** — answers doc `TODO(6)`. Also: `jailhouse cell list` exits 0 when jailhouse is disabled, so an exit-code guard silently skips the enable and fails later as `JAILHOUSE_CELL_CREATE: Invalid argument`. | resolved; both setup scripts fixed |
 
 ## Provenance of a binary
@@ -146,16 +148,16 @@ rather than whatever was last flashed. Exit status is 0 only if nothing failed.
 | Tier | Tests |
 |---|---|
 | gates (no board) | G1 both Arm builds, G2 compliance, G3 checkpatch, G4 ADSP neutrality (`--adsp`, slow) |
-| hardware | H1 boot + board string, H2 `cntfrq` + timer, H3 RX + interrupt load, H4 runtime reconfigure, H5 `uart_basic_api`, H6 `uart_interrupt_api`, H7 cell cycling |
+| hardware | H1 boot + board string, H2 `cntfrq` + timer, H3 RX + interrupt load, H4 runtime reconfigure, H5 `uart_basic_api`, H6 `uart_interrupt_api`, H7 cell cycling, H8 memory window |
 
 `tests/README.md` documents each test: what it runs, the expected output, and —
 importantly — what it deliberately does **not** prove. Firmware sources are under
 `tests/firmware/`, host drivers under `tests/host/`, board scripts under
 `tests/board/`.
 
-`tests/firmware/memtest/` is present but **not wired into the runner**: it fails
-until the 8 MB Jailhouse cells are installed. `tests/tools/verify-jailhouse-cells.py`
-inspects cell binaries against what the devicetree declares.
+H8 is now wired in: the 8 MB cells landed on 2026-09-09 and it passes.
+`tests/tools/verify-jailhouse-cells.py` inspects cell binaries against what the
+devicetree declares, and should be run **before** cells reach a board.
 
 Console is UART1 at 115200 on **CN3201**, FTDI adapter at `/dev/ttyUSB0`. Only one process can hold
 the port (`picocom` is built with `USE_FLOCK`), so the logger and an interactive `picocom` cannot run

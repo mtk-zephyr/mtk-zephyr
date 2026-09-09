@@ -60,6 +60,7 @@ hardware (board + serial):
   H5  tests/drivers/uart/uart_basic_api
   H6  tests/drivers/uart/uart_interrupt_api
   H7  cell shutdown/restart cycling
+  H8  declared memory window is actually granted
 EOF
 	exit 0
 fi
@@ -253,6 +254,24 @@ PY
 	[ "$booted" -eq "$cycles" ] \
 		&& pass "H7 cell restart cycling" "$booted/$cycles clean boots" \
 		|| fail "H7 cell restart cycling" "$booted/$cycles boots seen"
+
+	# --- H8: the declared memory window is actually granted --------------
+	# A plain boot cannot tell an 8 MB Jailhouse grant from a 2 MB one, since
+	# hello_world never touches high addresses. This forces the image to span
+	# the window with a 6 MB .bss array, so boot-time zeroing touches every
+	# byte. If the cell grants less than the board declares, the cell drops to
+	# `failed` before the console exists.
+	if build_image "$TESTS_DIR/firmware/memtest" memtest \
+	   && flash_image "$IMAGE_BIN" "zephyr-$BOARD_TAG-memtest.bin"; then
+		: > "$UART_LOG"; run_cell "zephyr-$BOARD_TAG-memtest.bin"; sleep 6
+		if grep -q 'MEMTEST DONE mismatches=0 -> PASS' "$UART_LOG"; then
+			pass "H8 memory window" "$(grep -oP 'MEMTEST window \K.*' "$UART_LOG" | head -1)"
+		else
+			fail "H8 memory window" "cell=$(cell_state) — granted window smaller than declared?"
+		fi
+	else
+		fail "H8 memory window" "build or flash failed"
+	fi
 	stop_logger
 fi
 

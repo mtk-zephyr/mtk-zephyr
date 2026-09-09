@@ -93,7 +93,7 @@ def parse_cell(data, off):
     return info, regions
 
 
-def check(path, expect_size, base, verbose):
+def check(path, expect_size, base, verbose, cell_name='zephyr'):
     data = open(path, 'rb').read()
     problems = []
     sys_revision = None
@@ -160,6 +160,11 @@ def check(path, expect_size, base, verbose):
         if res:
             print(f'      reserves {human(res[0]["size"])} at 0x{base:x} '
                   f'(inmates are carved from this)')
+            if res[0]['size'] < expect_size:
+                problems.append(
+                    f'{path}: root cell reserves only {human(res[0]["size"])} '
+                    f'at 0x{base:x}, less than the {human(expect_size)} an '
+                    f'inmate is expected to claim')
         else:
             print(f'      no region at 0x{base:x}')
         print()
@@ -169,6 +174,9 @@ def check(path, expect_size, base, verbose):
         problems.append(f'{path}: no LOADABLE region at phys 0x{base:x}')
     elif len(inmate) > 1:
         problems.append(f'{path}: {len(inmate)} LOADABLE regions at 0x{base:x}, expected 1')
+    elif info['name'] != cell_name:
+        print(f'      note: cell is named {info["name"]!r}, not {cell_name!r} — '
+              f'size not enforced ({human(inmate[0]["size"])})')
     else:
         got = inmate[0]['size']
         if got != expect_size:
@@ -187,6 +195,9 @@ def main():
     ap.add_argument('files', nargs='+')
     ap.add_argument('--expect-size', default='0x800000',
                     help='required inmate window size (default 0x800000 = 8 MB)')
+    ap.add_argument('--cell-name', default='zephyr',
+                    help='only enforce the size on inmate cells with this name '
+                         '(default "zephyr"); others are reported, not judged')
     ap.add_argument('--base', default='0x6b000000',
                     help='inmate window physical base (default 0x6b000000)')
     ap.add_argument('-v', '--verbose', action='store_true',
@@ -199,7 +210,7 @@ def main():
     problems = []
     for f in args.files:
         try:
-            problems += check(f, expect, base, args.verbose)
+            problems += check(f, expect, base, args.verbose, args.cell_name)
         except OSError as e:
             problems.append(f'{f}: {e}')
 

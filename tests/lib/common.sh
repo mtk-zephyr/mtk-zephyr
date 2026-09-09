@@ -123,8 +123,10 @@ flash_image() {
 	[ "$want" = "$got" ]
 }
 
+# CELL_DIR lets a run use cell configs from somewhere other than
+# /usr/share/jailhouse/cells — e.g. newly built ones staged under $BOARD_DIR.
 run_cell() {
-	adb shell "$BOARD_SETUP $1" >/dev/null 2>&1
+	adb shell "${CELL_DIR:+CELL_DIR=$CELL_DIR }$BOARD_SETUP $1" >/dev/null 2>&1
 }
 
 cell_state() {

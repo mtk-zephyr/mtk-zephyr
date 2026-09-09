@@ -16,7 +16,7 @@ set -e
 
 DIR=${BOARD_DIR:-/root/claude_aary}
 IMAGE=${1:-zephyr-g510.bin}
-CELLS=/usr/share/jailhouse/cells
+CELLS=${CELL_DIR:-/usr/share/jailhouse/cells}
 
 cd "$DIR"
 
