@@ -12,7 +12,7 @@ import time
 
 import serial
 
-PORT = '/dev/ttyUSB0'
+PORT = os.environ.get('PORT', '/dev/ttyUSB0')
 # Board-specific bits, overridable so the same driver serves both EVKs.
 SETUP = os.environ.get('SETUP', '/root/claude_aary/setup-g700.sh')
 IMAGE = os.environ.get('IMAGE', 'zephyr-g700-uartapi.bin')

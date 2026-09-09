@@ -4,12 +4,13 @@ Sends known data to the board and verifies the echo byte-for-byte, then asks the
 firmware for its counters. Owns /dev/ttyUSB0 for the duration, so the line logger
 must not be running.
 """
+import os
 import sys
 import time
 
 import serial
 
-PORT = '/dev/ttyUSB0'
+PORT = os.environ.get('PORT', '/dev/ttyUSB0')
 BAUD = 115200
 STATS_REQ = b'\x04'
 

@@ -4,11 +4,12 @@ Samples the console at 115200, then at 9600, then at 115200 again, following the
 firmware's phase announcements. Seeing readable text at 9600 and only at 9600
 during phase 2 is the proof that uart_configure() actually changed the wire rate.
 """
+import os
 import time
 
 import serial
 
-PORT = '/dev/ttyUSB0'
+PORT = os.environ.get('PORT', '/dev/ttyUSB0')
 
 
 def sample(baud, secs, label):

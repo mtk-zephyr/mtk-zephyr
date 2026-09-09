@@ -129,13 +129,33 @@ hardware report should quote it — a SHA says what should have been built, not 
 `genio-700-evk-zephyr.cell` and loads the 700 image. It boots — the parts are pin-compatible — but
 the banner then reports the 700 board on 510 hardware. Left unmodified; use `setup-g510.sh`.
 
-## Reproducing the hardware tests — `scripts/`
+## The test suite — `tests/`
 
-| File | Purpose |
+`scripts/` has been replaced by a real suite. Run it from a checkout of the
+Zephyr tree with a board attached:
+
+```bash
+./tests/run-tests.sh            # everything available
+./tests/run-tests.sh --gates    # no board needed
+./tests/run-tests.sh --list     # what would run
+```
+
+Everything is built from the current checkout, so a run exercises the tree
+rather than whatever was last flashed. Exit status is 0 only if nothing failed.
+
+| Tier | Tests |
 |---|---|
-| `hwtest-main.c` | drop-in `samples/hello_world/src/main.c`: prints `cntfrq`, then three `SLEEP_START`/`SLEEP_END` pairs |
-| `uartlog.py` | host-side logger, timestamps each line on arrival — the external clock the sleep test needs |
-| `setup-g510.sh` | board-side: tear down, create the 510 cell, load at `0x8000`, start |
+| gates (no board) | G1 both Arm builds, G2 compliance, G3 checkpatch, G4 ADSP neutrality (`--adsp`, slow) |
+| hardware | H1 boot + board string, H2 `cntfrq` + timer, H3 RX + interrupt load, H4 runtime reconfigure, H5 `uart_basic_api`, H6 `uart_interrupt_api`, H7 cell cycling |
+
+`tests/README.md` documents each test: what it runs, the expected output, and —
+importantly — what it deliberately does **not** prove. Firmware sources are under
+`tests/firmware/`, host drivers under `tests/host/`, board scripts under
+`tests/board/`.
+
+`tests/firmware/memtest/` is present but **not wired into the runner**: it fails
+until the 8 MB Jailhouse cells are installed. `tests/tools/verify-jailhouse-cells.py`
+inspects cell binaries against what the devicetree declares.
 
 Console is UART1 at 115200 on **CN3201**, FTDI adapter at `/dev/ttyUSB0`. Only one process can hold
 the port (`picocom` is built with `USE_FLOCK`), so the logger and an interactive `picocom` cannot run
