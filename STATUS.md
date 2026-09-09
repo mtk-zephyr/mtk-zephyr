@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-03 (both boards fully tested; defconfig fix folded, NOT pushed)
+# STATUS — as of 2026-09-09 (8 MB cells verified on BOTH boards; suite green 13/13)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -10,6 +10,18 @@ overwritten on every update; `git log` on this branch is the history.
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
 | `mtk-genio-dev` | **local `6e09950bf79`**, remote `0d9156ec50b` | 19 commits; defconfig fix folded into 14 and 15, **not pushed** | builds, full compliance, **and the full test matrix on both boards** |
 | `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
+
+## Suite results — 13/13 on both boards (2026-09-09)
+
+```
+gates     G1 both Arm builds (156 KB / 8 MB)   G2 compliance   G3 checkpatch
+hardware  H1 boot   H2 cntfrq 13 MHz + k_sleep   H3 RX/interrupt load
+          H4 reconfigure   H5 uart_basic_api   H6 uart_interrupt_api
+          H7 cell cycling  H8 memory window 8 MB
+```
+
+`k_sleep` worst deviation: 5 ms on the 700, 13 ms on the 510 — both far inside
+the 100 ms tolerance. Interrupt counters identical on both: `rx=10065 isr=10065`.
 
 ## Hardware — both boards pass
 
@@ -100,7 +112,7 @@ Board images were still refreshed to the new shape so future reports quote a sub
 | 3 | `mtk-v4.4.2` diverges from `mtk-genio-dev`: 4 A55 cores not 6, no Genio 510 board, no docs. | **decided: frozen**, single migration pass later |
 | 4 | `verified/*` annotated tags shadow the SHA in the boot banner via `git describe`. Make them lightweight to keep both. | open, cosmetic but affects provenance |
 | 5 | Both board defconfigs set `CONFIG_DCACHE_LINE_SIZE_DETECT` / `CONFIG_ICACHE_LINE_SIZE_DETECT`, which arm64 does not support — dead lines warning on every build. | **FIXED**, folded into commits 14 and 15. Verified a no-op: 0 `.config` lines differ, line size still 64, warnings 2→0 |
-| 7 | **The 8 MB inmate window is real on the Genio 700.** New cells verified and installed; H8 passes with a 6 MB `.bss` array spanning `0x27a80..0x627a7c`, three times past the old 2 MB ceiling. All 9 hardware tests pass. | resolved on the 700; 510 pending |
+| 7 | **The 8 MB inmate window is real on BOTH boards.** New cells verified before transfer and installed; H8 passes with a 6 MB `.bss` array spanning `0x27a80..0x627a7c`, three times past the old 2 MB ceiling. Full suite 13/13 on each board. | **resolved** |
 | 8 | **Four rpmsg cell configs were NOT updated**: `genio-{700,510}-evk-zephyr_rpmsg_{native,openamp}.cell` still grant 2 MB while the boards declare 8 MB. Running Zephyr under an rpmsg cell reacquires the latent fault. The plain and AFE cells are correct. | open, MediaTek-side |
 | 6 | `jailhouse enable` **is required from cold on both boards** — answers doc `TODO(6)`. Also: `jailhouse cell list` exits 0 when jailhouse is disabled, so an exit-code guard silently skips the enable and fails later as `JAILHOUSE_CELL_CREATE: Invalid argument`. | resolved; both setup scripts fixed |
 
