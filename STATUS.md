@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-09 (8 MB cells verified on BOTH boards; suite green 13/13)
+# STATUS — as of 2026-09-09 (drop pushed; 8 MB cells verified on both boards; suite 13/13)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -8,7 +8,7 @@ overwritten on every update; `git log` on this branch is the history.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | **local `6e09950bf79`**, remote `0d9156ec50b` | 19 commits; defconfig fix folded into 14 and 15, **not pushed** | builds, full compliance, **and the full test matrix on both boards** |
+| `mtk-genio-dev` | `361cbfaca1f` | 19 commits (drop 2026-09-04, 8 MB window) — **pushed**, tree `e4cbf7a6315e` as authored | gates + full hardware suite, **13/13 on both boards** |
 | `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
 
 ## Suite results — 13/13 on both boards (2026-09-09)
