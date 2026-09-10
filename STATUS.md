@@ -1,55 +1,81 @@
-# STATUS — as of 2026-09-09 (PR A ready to submit, 13/13 on both boards; cpu split defect fixed)
+# STATUS — as of 2026-09-10 (PR A submitted; both branches resynced, 4.4.2 at full parity)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
+
+## PR A is upstream
+
+**PR A is pushed** — one PR, no RFC.
+
+**Review feedback has to land in two places.** `mtk-genio-dev` was rebased on 2026-09-10, so
+its shas no longer match the commits under review. The PR branch is what reviewers see;
+`mtk-genio-dev` is what everything else is generated from. Fixing one does not fix the other.
 
 ## Branch tips
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
-| `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | `d60c7e1f589` | 18 commits — **force-pushed 2026-09-09** with the cpu node split fixed; end tree `bd315b9ea4e`, unchanged by the rewrite | gates + full hardware suite |
-| `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
+| `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
+| `mtk-genio-dev` | `d4dbd67dc1d` | 18 commits, **rebased onto the new main** with zero conflicts | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
+| `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
-| `mtk-genio` | `bf26ae3a4c3` | **PR A only**, 15 commits on upstream `main` (`1dbf149f7dd`), `GENIO: ` stripped | 700: 13/13 in one full run. 510: 9/9 hardware re-run after the `CELL_DIR` fix, gates from its full run. **20/20 per-commit builds** |
+| `mtk-genio` | `bf26ae3a4c3` | **PR A only**, 15 commits on upstream `main` (`1dbf149f7dd`), `GENIO: ` stripped. **Frozen — do not rebase while under review** | 700 13/13, 510 9/9 hardware, 20/20 per-commit |
 
-Named `mtk-genio-mt8188` until 2026-09-09; renamed to `mtk-genio` before submission and the
-old name deleted. `mtk-zephyr/zephyr` is a real fork of `zephyrproject-rtos/zephyr`, so the PR
-is opened cross-repo from this branch.
+`mtk-zephyr/zephyr` is a real fork of `zephyrproject-rtos/zephyr`, so the PR is cross-repo.
 
-No pull request has been opened yet. The submitter opens it by hand; the drafted title and
-description live in `to-authoring/2026-09-09-pra-upstream-and-cpu-split.md`.
-
-Deliberately **no `Assisted-by:` trailers** on these 15 commits: they were ported from a
+Deliberately **no `Assisted-by:` trailers** on the PR A commits: they were ported from a
 working repo rather than written by an agent. Future Claude-authored work carries the tag
 (`doc/contribute/guidelines.rst`).
 
-**`pre-cpu-move` tags the pre-rewrite tip `95a72658a6b`** if the old split is ever needed.
+Backup tags: `pre-resync-dev` `d60c7e1f589`, `pre-resync-442` `c4333dd7d9c`,
+`pre-cpu-move` `95a72658a6b`.
 
-## PR A did not build on its own — fixed
+## mtk-v4.4.2 keeps four deliberate deltas — never reconcile them
+
+| File | v4.4.2 keeps | why |
+|---|---|---|
+| `mmu_regions.c` | static `GIC_DIST`/`GIC_REDIST` entries | `arch/arm64/core/mmu.c` supplies these generically on `main` but not on 4.4.2. Dropping them is a **silent boot failure** — no console output at all |
+| `uart_mtk_common.c` | `int uart_mtk_irq_update` + `return 1` | 4.4.2's `uart_driver_api` returns `int` |
+| `uart_mtk_common.h` | matching `int` declaration | same |
+| 700 `_defconfig` | `CONFIG_D/ICACHE_LINE_SIZE_DETECT=y` | 4.4.2-only; dev has never carried these |
+
+Of the 52 files the series adds, exactly these four differ between the branches.
+
+## PR A did not build on its own — fixed 2026-09-09
 
 `cpu@400`/`cpu@500` were added by the PR B EINT/GPIO commit while the board dts that
 disables them sits in PR A, so PR A alone failed dtc with "node has a unit name, but no
-reg or ranges property". Hidden until now because every build used the full branch. The
-nodes moved into `dts: arm64: mediatek: add MT8188`. Upstream requires every commit to
-build (bisectability), so the suite is no longer validated tip-only — see
-`to-authoring/2026-09-09-pra-upstream-and-cpu-split.md`.
+reg or ranges property". Hidden because every build used the full branch. The nodes moved
+into `dts: arm64: mediatek: add MT8188`. Upstream requires every commit to build
+(bisectability), so nothing is validated tip-only any more — `tests/tools/bisect-build.sh`.
 
-## Suite results — 13/13 on both boards (2026-09-09)
+## Suite results — 13/13 on both boards, on BOTH branches (2026-09-10)
 
 ```
-gates     G1 both Arm builds (156 KB / 8 MB)   G2 compliance   G3 checkpatch
+gates     G1 both Arm builds   G2 compliance   G3 checkpatch
 hardware  H1 boot   H2 cntfrq 13 MHz + k_sleep   H3 RX/interrupt load
           H4 reconfigure   H5 uart_basic_api   H6 uart_interrupt_api
           H7 cell cycling  H8 memory window 8 MB
+sweep     every commit built individually: 29/29 on each branch
 ```
 
-`k_sleep` worst deviation: 5 ms on the 700, 13 ms on the 510 — both far inside
-the 100 ms tolerance. Interrupt counters identical on both: `rx=10065 isr=10065`.
+| | `mtk-genio-dev` | `mtk-v4.4.2` |
+|---|---|---|
+| Genio 700 | 13/13 | 13/13 |
+| Genio 510 | 13/13 | 13/13 |
+| per-commit sweep | 29/29 | 29/29 |
+| image size | 156 KB | 152 KB |
+
+`k_sleep(5s)` worst deviation 4-5 ms on every run, far inside the 100 ms tolerance.
+Interrupt counters identical everywhere: `rx=10065 isr=10065`.
+
+Each branch needs its own `west update`; building one against the other's modules
+produces phantom failures. Pass `--base-ref` to match (`origin/main` for dev, `v4.4.2`
+for the customer branch) or compliance spans the whole release gap.
 
 ## Hardware — both boards pass
 
@@ -66,7 +92,7 @@ is **positively confirmed on both parts**, not just inferred.
 | Boots its own image in its own cell | PASS | PASS |
 | **`cntfrq`** | **13000000** | **13000000** |
 | **`k_sleep(K_SECONDS(5))`** vs host wall clock | **5.004 / 5.005 / 5.012 s** | **5.004 s** |
-| **`mtk-v4.4.2` image boots** | **PASS, natively** | PASS (cross-board) |
+| **`mtk-v4.4.2` image boots** | **PASS, natively** | **PASS, natively** (2026-09-10) |
 
 `SYS_CLOCK_HW_CYCLES_PER_SEC = 13000000` confirmed on both parts — **no amendment needed**. The
 `IRQ_TYPE_LEVEL` arch-timer fix and the v4.4.2 GIC MMU restore are both confirmed, the latter now on
@@ -157,6 +183,11 @@ Until `verified/*` is made lightweight, **the md5 of `zephyr.bin` is the reliabl
 hardware report should quote it — a SHA says what should have been built, not what was.
 
 ## Images on the board, in `/root/claude_aary`
+
+**Historical — all three shas below predate the 2026-09-10 rebases and no longer exist on
+their branches.** These were placed by hand during early bring-up. The suite builds and
+flashes its own images (`zephyr-g*-hwtest.bin` and friends) on every run and verifies each
+by md5, so nothing below is what the tests actually exercise.
 
 | File | Branch | Built for | md5 |
 |---|---|---|---|
