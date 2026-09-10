@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-09 (PR A staged upstream; cpu@400/cpu@500 split defect fixed)
+# STATUS — as of 2026-09-09 (PR A ready to submit, 13/13 on both boards; cpu split defect fixed)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -15,9 +15,18 @@ On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
-| `mtk-genio-mt8188` | `bf26ae3a4c3` | **PR A only**, 15 commits on upstream `main` (`1dbf149f7dd`), `GENIO: ` stripped | gates + hardware 9/9 + **20/20 per-commit builds** |
+| `mtk-genio` | `bf26ae3a4c3` | **PR A only**, 15 commits on upstream `main` (`1dbf149f7dd`), `GENIO: ` stripped | 700: 13/13 in one full run. 510: 9/9 hardware re-run after the `CELL_DIR` fix, gates from its full run. **20/20 per-commit builds** |
 
-No pull request has been opened.
+Named `mtk-genio-mt8188` until 2026-09-09; renamed to `mtk-genio` before submission and the
+old name deleted. `mtk-zephyr/zephyr` is a real fork of `zephyrproject-rtos/zephyr`, so the PR
+is opened cross-repo from this branch.
+
+No pull request has been opened yet. The submitter opens it by hand; the drafted title and
+description live in `to-authoring/2026-09-09-pra-upstream-and-cpu-split.md`.
+
+Deliberately **no `Assisted-by:` trailers** on these 15 commits: they were ported from a
+working repo rather than written by an agent. Future Claude-authored work carries the tag
+(`doc/contribute/guidelines.rst`).
 
 **`pre-cpu-move` tags the pre-rewrite tip `95a72658a6b`** if the old split is ever needed.
 

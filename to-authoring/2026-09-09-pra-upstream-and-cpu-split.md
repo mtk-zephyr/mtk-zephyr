@@ -2,7 +2,7 @@
 
 ## Summary
 
-PR A (15 commits) now exists on `mtk-zephyr/zephyr` as `mtk-genio-mt8188`, based on
+PR A (15 commits) now exists on `mtk-zephyr/zephyr` as `mtk-genio`, based on
 `main` (`1dbf149f7dd`, a clean sync of zephyrproject-rtos), with the `GENIO: ` prefix
 stripped. Everything passes; nothing has been submitted upstream and no pull request
 has been opened.
@@ -52,7 +52,8 @@ upstream copy. Verified:
 | both board builds | pass |
 | compliance, base `upstream-zephyr/main` | pass, warnings only |
 | checkpatch | 0 errors, 0 warnings |
-| hardware, Genio 510 | 9/9 including the 8 MB window |
+| hardware, Genio 510 | 9/9; gates from the full run, hardware re-run after the `CELL_DIR` fix |
+| hardware, Genio 700 | 13/13 in a single full run, gates and hardware together |
 | per-commit build sweep | 20/20, bisectable |
 | 49 files added by PR A | byte-identical to the validated source |
 | trailers | 15 `Signed-off-by`, 12 `Co-authored-by` |
@@ -96,3 +97,70 @@ Human review, from `doc/project/release_process.rst`:
 
 The 2 MB/8 MB gap in `/usr/share` needs no action here: the jailhouse change is
 landing separately and the cells on the board already carry it.
+
+## Drafted PR title and description
+
+The submitter opens the PR by hand from
+`https://github.com/zephyrproject-rtos/zephyr/compare/main...mtk-zephyr:zephyr:mtk-genio`.
+Submitted as one PR; no RFC filed.
+
+```
+TITLE
+=====
+
+MediaTek Genio: add MT8188 Arm core support and the Genio 700/510 EVKs
+
+
+DESCRIPTION
+===========
+
+Adds Zephyr support for the Cortex-A55 application cores of the MediaTek MT8188
+SoC, and for the two evaluation boards built on it: the MT8390 Genio 700 EVK and
+the MT8370 Genio 510 EVK. Zephyr runs as a Jailhouse inmate on one A55 core
+while Linux keeps the rest of the board.
+
+Until now `soc/mediatek/mt8xxx` described only the Xtensa audio DSPs of these
+SoCs. The first four commits separate the family from that assumption and give
+each SoC per-cpucluster Kconfig symbols and directories, so the same SoC can
+carry both an `adsp` cluster and an `a55` one. The remaining commits add the
+MT8188 devicetree, its MMU regions, three drivers (infra-ao clock control, UART,
+pin control) and the two boards.
+
+The ADSP refactor is intended to be behaviour-neutral for existing users. That
+was verified rather than assumed: for every MediaTek ADSP board target, no
+Kconfig symbol is removed by the series, and the loadable images are
+byte-identical before and after.
+
+Hardware verified on both EVKs, on the branch as submitted:
+
+- boots, correct board string, `cntfrq` 13 MHz, `k_sleep(5s)` within 5 ms
+- UART RX under interrupt load: 10065 bytes received, 10065 ISR calls
+- runtime baud reconfigure 115200 -> 9600 -> 115200, with a negative control
+- `tests/drivers/uart/uart_basic_api` and `tests/drivers/uart/uart_interrupt_api`
+  both 100% pass on hardware
+- cell shutdown/restart cycling, 6/6 clean boots
+- the 8 MB memory window the devicetree declares is verified to be actually
+  granted, by an image whose .bss spans it
+
+Every commit in the series was built individually for `mt8195//adsp` plus both
+new boards, so the series is bisectable.
+
+No new tests or samples are added: the boards are exercised by the existing
+in-tree UART test suites listed above and by twister's `hello_world` coverage.
+
+A follow-up PR adds the MT8188 EINT and GPIO support, which builds on this
+series.
+
+
+NOTES FOR THE SUBMITTER
+=======================
+
+- No `Fixes #N` line: this is new hardware enablement, not a fix. Add one if an
+  enhancement issue is filed for it first.
+- `MAINTAINERS.yml` is the only file outside soc/, boards/ and drivers/*/*, so
+  the organisation four-eye rule needs one approval from outside MediaTek on it.
+- If maintainers ask for a smaller PR, the natural cut is commits 1-4 (the ADSP
+  refactor, behaviour-neutral) as one PR and 5-15 (the new MT8188 support) as a
+  second that depends on it.
+- Keep this description in sync with the commits after any force-push.
+```
