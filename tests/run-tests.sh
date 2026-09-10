@@ -20,6 +20,7 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 . "$TESTS_DIR/lib/common.sh"
 
+BASE_REF="${BASE_REF:-origin/main}"
 RUN_GATES=1
 RUN_HW=1
 ADSP_NEUTRALITY=0
@@ -35,6 +36,7 @@ while [ $# -gt 0 ]; do
 	--list)       LIST_ONLY=1 ;;
 	--board)      shift; BOARD_TARGET="$1"; BOARD_TAG=custom ;;
 	--port)       shift; PORT="$1" ;;
+	--base-ref)   shift; BASE_REF="$1" ;;
 	-h|--help)    usage ;;
 	*) echo "unknown option: $1" >&2; exit 2 ;;
 	esac
@@ -66,7 +68,11 @@ EOF
 fi
 
 cd "$ZEPHYR_BASE" || { echo "no zephyr tree at $ZEPHYR_BASE" >&2; exit 2; }
-BASE="$(git rev-parse origin/main 2>/dev/null || echo '')"
+# Compliance and checkpatch diff against this. Defaults to origin/main, but a
+# branch based on a different upstream (e.g. the submission branch on
+# mtk-zephyr/zephyr) must override it, or the range spans hundreds of
+# unrelated commits.
+BASE="$(git rev-parse "$BASE_REF" 2>/dev/null || echo '')"
 HEAD_SHA="$(git rev-parse --short HEAD)"
 
 log "MediaTek Genio Zephyr test suite"
@@ -263,11 +269,17 @@ PY
 	# `failed` before the console exists.
 	if build_image "$TESTS_DIR/firmware/memtest" memtest \
 	   && flash_image "$IMAGE_BIN" "zephyr-$BOARD_TAG-memtest.bin"; then
-		: > "$UART_LOG"; run_cell "zephyr-$BOARD_TAG-memtest.bin"; sleep 6
+		# Zeroing 6 MB of .bss takes a variable amount of time, so poll for
+		# the verdict instead of sleeping a fixed interval and hoping.
+		: > "$UART_LOG"; run_cell "zephyr-$BOARD_TAG-memtest.bin"
+		for _ in $(seq 30); do
+			grep -q 'MEMTEST DONE' "$UART_LOG" && break
+			sleep 1
+		done
 		if grep -q 'MEMTEST DONE mismatches=0 -> PASS' "$UART_LOG"; then
 			pass "H8 memory window" "$(grep -oP 'MEMTEST window \K.*' "$UART_LOG" | head -1)"
 		else
-			fail "H8 memory window" "cell=$(cell_state) — granted window smaller than declared?"
+			fail "H8 memory window" "cell=$(cell_state) — check the grant in $CELL_DIR"
 		fi
 	else
 		fail "H8 memory window" "build or flash failed"

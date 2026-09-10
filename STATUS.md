@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-09 (drop pushed; 8 MB cells verified on both boards; suite 13/13)
+# STATUS — as of 2026-09-09 (PR A staged upstream; cpu@400/cpu@500 split defect fixed)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -8,8 +8,27 @@ overwritten on every update; `git log` on this branch is the history.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `5a56224939a` | upstream Zephyr mirror, no MediaTek work | n/a |
-| `mtk-genio-dev` | `361cbfaca1f` | 19 commits (drop 2026-09-04, 8 MB window) — **pushed**, tree `e4cbf7a6315e` as authored | gates + full hardware suite, **13/13 on both boards** |
+| `mtk-genio-dev` | `d60c7e1f589` | 18 commits — **force-pushed 2026-09-09** with the cpu node split fixed; end tree `bd315b9ea4e`, unchanged by the rewrite | gates + full hardware suite |
 | `mtk-v4.4.2` | `c4333dd7d9c` | 18 commits on the `v4.4.2` release tag | builds, compliance, **boots on hardware** |
+
+On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
+
+| Branch | Tip | Contents | Verified |
+|---|---|---|---|
+| `mtk-genio-mt8188` | `bf26ae3a4c3` | **PR A only**, 15 commits on upstream `main` (`1dbf149f7dd`), `GENIO: ` stripped | gates + hardware 9/9 + **20/20 per-commit builds** |
+
+No pull request has been opened.
+
+**`pre-cpu-move` tags the pre-rewrite tip `95a72658a6b`** if the old split is ever needed.
+
+## PR A did not build on its own — fixed
+
+`cpu@400`/`cpu@500` were added by the PR B EINT/GPIO commit while the board dts that
+disables them sits in PR A, so PR A alone failed dtc with "node has a unit name, but no
+reg or ranges property". Hidden until now because every build used the full branch. The
+nodes moved into `dts: arm64: mediatek: add MT8188`. Upstream requires every commit to
+build (bisectability), so the suite is no longer validated tip-only — see
+`to-authoring/2026-09-09-pra-upstream-and-cpu-split.md`.
 
 ## Suite results — 13/13 on both boards (2026-09-09)
 

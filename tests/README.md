@@ -36,8 +36,24 @@ host/uartapi_host.py      drives the keyboard-harness ztest suites
 board/setup-g700.sh       board-side cell bring-up
 board/setup-g510.sh       likewise
 tools/verify-jailhouse-cells.py   inspect cell binaries (not wired into the run)
+tools/bisect-build.sh     build every commit in a range (not wired into the run)
 logs/                     per-test logs, overwritten each run
 ```
+
+### Before submitting a series: `tools/bisect-build.sh`
+
+The gates build the tip. Upstream requires every *commit* to build
+(`doc/contribute/contributor_expectations.rst`), and a tip-only run cannot see a
+series that is broken in the middle:
+
+```bash
+./tools/bisect-build.sh upstream-zephyr/main my-submission-branch
+```
+
+This is not hypothetical. Splitting a validated 18-commit branch into two PRs
+produced a first PR that referenced `cpu@400`/`cpu@500` while the commit adding
+those nodes stayed behind in the second, so the first failed `dtc` on its own.
+Every build until then had used the whole branch, so nothing caught it.
 
 ## Requirements
 
@@ -48,7 +64,8 @@ logs/                     per-test logs, overwritten each run
 | Board | Genio 700 or 510 EVK over `adb`, auto-detected from `uname -n` |
 | Serial | `$PORT`, default `/dev/ttyUSB0`, 115200, console on **CN3201** |
 | Board dir | `$BOARD_DIR`, default `/root/claude_aary`, holding `setup-g*.sh` |
-| Cell dir | `$CELL_DIR`, unset by default so the board's `/usr/share/jailhouse/cells` is used. Set it to stage newly built cells without touching system files |
+| Cell dir | `$CELL_DIR`, default `$BOARD_DIR/cells`, holding the patched cell configs. The stock `/usr/share/jailhouse/cells` still grant a 2 MB inmate window against the 8 MB the board devicetree declares, so a run against those fails H8 and drops any non-trivial image to `failed` before the console exists. Point this at `/usr/share/jailhouse/cells` to test the stock grant deliberately |
+| Compliance base | `$BASE_REF` or `--base-ref`, default `origin/main`. **A branch based on a different upstream must set this** — e.g. `--base-ref upstream-zephyr/main` for the submission branch — or compliance and checkpatch span hundreds of unrelated commits |
 
 Override any of them as environment variables.
 
