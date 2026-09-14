@@ -13,4 +13,16 @@
 				 <PINMUX_PIN_34__FUNC_I1_URXD1>;
 		};
 	};
+
+	/*
+	 * Every other function of these two pins is a JTAG signal, so the GPIO
+	 * function has to be selected rather than relied on.  Applied by the
+	 * bank that owns the pins, from its own default state.
+	 */
+	gpio32_63_default: gpio32_63_default {
+		group1 {
+			pinmux = <PINMUX_PIN_38__FUNC_B_GPIO38>,
+				 <PINMUX_PIN_40__FUNC_B_GPIO40>;
+		};
+	};
 };

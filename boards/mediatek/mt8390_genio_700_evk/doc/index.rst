@@ -67,6 +67,30 @@ UART2   CN3202
 UART0 is the Linux console and stays with the root cell, so Zephyr uses UART1
 on **CN3201**.
 
+GPIO
+----
+
+The inmate cell is given two pins, **GPIO 38** and **GPIO 40**. They are pins 6
+and 8 of GPIO bank 1, which covers GPIO 32 to 63:
+
+.. code-block:: c
+
+   const struct device *gpio = DEVICE_DT_GET(DT_NODELABEL(gpio32_63));
+
+   gpio_pin_configure(gpio, 6, GPIO_OUTPUT_INACTIVE);  /* GPIO 38 */
+   gpio_pin_configure(gpio, 8, GPIO_INPUT);            /* GPIO 40 */
+
+Every other pin of the bank stays with the Linux root cell and is listed in the
+bank's ``gpio-reserved-ranges``, so the driver rejects it; the five remaining
+banks are disabled for the same reason. Both usable pins carry JTAG signals in
+every function other than GPIO, so the board selects the GPIO function for them
+in its pin control state.
+
+Pin interrupts are delivered by the SoC's external interrupt controller. Rising,
+falling and both-edge triggers are available. Level triggers are not: the
+controller's own output to the GIC is level-triggered, so a level that stays
+asserted would re-enter the handler for as long as it lasts.
+
 Programming and Debugging
 *************************
 

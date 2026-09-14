@@ -1,0 +1,19 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Needs a jumper wire between GPIO 38 and GPIO 40, which are pins 6 and 8 of
+ * bank 1.  The board reserves every other pin in the bank, so these two are
+ * also the only ones the driver will let a write reach.
+ */
+
+/ {
+	resources {
+		compatible = "test-gpio-basic-api";
+		out-gpios = <&gpio32_63 6 0>;
+		in-gpios = <&gpio32_63 8 0>;
+	};
+};

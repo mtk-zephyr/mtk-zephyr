@@ -60,3 +60,18 @@
 	current-speed = <115200>;
 	status = "okay";
 };
+
+/*
+ * Bank 1 covers GPIO 32 to 63, of which the hypervisor hands this cell only
+ * GPIO 38 and 40, which are pins 6 and 8 of the bank.  Every other pin of the
+ * bank belongs to the host, so it is reserved here: touching one would reach a
+ * pad outside this cell.
+ *
+ * The remaining five banks stay disabled for the same reason.
+ */
+&gpio32_63 {
+	pinctrl-0 = <&gpio32_63_default>;
+	pinctrl-names = "default";
+	gpio-reserved-ranges = <0 6>, <7 1>, <9 23>;
+	status = "okay";
+};
