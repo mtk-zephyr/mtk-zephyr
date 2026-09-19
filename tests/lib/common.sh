@@ -131,9 +131,14 @@ stop_logger() {
 
 # --- build / flash --------------------------------------------------------
 # $1 = source dir (abs or relative to ZEPHYR_BASE), $2 = short name
+# build_image <src> <name> [extra west/cmake args...]
+# Extra arguments go after `--`, for suites that need an overlay or a config
+# override -- gpio_basic_api needs a devicetree overlay naming the two pins the
+# loopback wire joins, for instance.
 build_image() {
 	local src="$1" name="$2" d="$BUILD_ROOT/$2_$BOARD_TAG"
-	west build -p always -b "$BOARD_TARGET" "$src" -d "$d" \
+	shift 2
+	west build -p always -b "$BOARD_TARGET" "$src" -d "$d" ${1:+-- "$@"} \
 		>"$LOG_DIR/build_$name.log" 2>&1 || return 1
 	IMAGE_BIN="$d/zephyr/zephyr.bin"
 	IMAGE_MD5="$(md5sum "$IMAGE_BIN" | cut -d' ' -f1)"

@@ -73,6 +73,7 @@ hardware (board + serial):
   H7  cell shutdown/restart cycling
   H8  declared memory window is actually granted
   H9  GPIO and EINT drivers      [--gpio, needs a jumper GPIO 38 to 40]
+  H10 tests/drivers/gpio/gpio_basic_api   [--gpio, same jumper]
 EOF
 	exit 0
 fi
@@ -349,8 +350,35 @@ PY
 		else
 			fail "H9 GPIO and EINT" "build or flash failed"
 		fi
+
+		# --- H10: the upstream GPIO conformance suite ----------------
+		# Complements H9 rather than repeating it. H9 covers what is most
+		# likely wrong in *this* driver; this covers whether the driver
+		# honours the *API contract* -- callback add/remove, removing a
+		# callback from inside itself, enable/disable. Needs the same
+		# jumper, declared to the test by a devicetree overlay in
+		# tests/drivers/gpio/gpio_basic_api/boards/.
+		if build_image "$ZEPHYR_BASE/tests/drivers/gpio/gpio_basic_api" gpioapi \
+		   && flash_image "$IMAGE_BIN" "zephyr-$BOARD_TAG-gpioapi.bin"; then
+			: > "$UART_LOG"; run_cell "zephyr-$BOARD_TAG-gpioapi.bin"
+			for _ in $(seq 40); do
+				grep -qE 'PROJECT EXECUTION (SUCCESSFUL|FAILED)' "$UART_LOG" && break
+				sleep 1
+			done
+			if grep -q 'PROJECT EXECUTION SUCCESSFUL' "$UART_LOG"; then
+				# Two config_trigger tests skip themselves on this SoC:
+				# open-drain lives in the pin controller, so the driver
+				# returns -ENOTSUP and the test opts out. Expected.
+				pass "H10 gpio_basic_api" "$(grep -c '^ - PASS' "$UART_LOG") passed, $(grep -c '^ - SKIP' "$UART_LOG") skipped (open-drain)"
+			else
+				fail "H10 gpio_basic_api" "$(grep -m1 -oP '^ - FAIL.*' "$UART_LOG" || echo "no verdict — cell=$(cell_state)")"
+			fi
+		else
+			fail "H10 gpio_basic_api" "build or flash failed"
+		fi
 	else
 		skip "H9 GPIO and EINT" "needs --gpio and a jumper between GPIO 38 and 40"
+		skip "H10 gpio_basic_api" "needs --gpio and a jumper between GPIO 38 and 40"
 	fi
 	stop_logger
 fi

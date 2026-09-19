@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-19 (PR B GPIO and EINT verified 19/19 on both boards)
+# STATUS — as of 2026-09-19 (PR B passes the upstream GPIO conformance suite; copyright at 2026)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -32,12 +32,25 @@ The suite runs this as **H9** behind `--gpio`, off by default because the jumper
 not always fitted. Runs now write to `logs/<timestamp>-<agent>-<branch>/` so the two
 agents sharing this workspace cannot overwrite each other's console transcripts.
 
+**The upstream `tests/drivers/gpio/gpio_basic_api` also passes on both boards**, as
+**H10** under the same flag. It covers what H9 deliberately does not — callback
+add/remove, enable/disable, and removing a callback from inside itself. Two of its
+tests skip themselves because the driver returns `-ENOTSUP` for open-drain, which
+lives in the pin controller on this SoC; that is the test's own documented path.
+Overlays naming the two pins ship with the series under
+`tests/drivers/gpio/gpio_basic_api/boards/`.
+
+**Copyright is settled at 2026.** Every MediaTek file the series adds reads
+`Copyright (c) 2026 MediaTek Inc.`, normalised inside the commit that adds it.
+Files held by other parties — the ChromiumOS notices under `soc/mediatek` — are
+deliberately untouched.
+
 ## Branch tips
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `344dc286ede` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers) | gates, **700 19/19 GPIO**, **510 19/19 GPIO**, 18/18 per-commit |
+| `mtk-genio-dev` | `8b348fc37a2` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers) | gates, **19/19 GPIO** and **`gpio_basic_api`** on both boards, 18/18 per-commit |
 | `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
