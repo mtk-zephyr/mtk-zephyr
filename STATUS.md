@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-10 (PR A submitted; both branches resynced, 4.4.2 at full parity)
+# STATUS — as of 2026-09-18 (PR B drivers landed on mtk-genio-dev, on the round-1 PR A base)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -7,16 +7,25 @@ overwritten on every update; `git log` on this branch is the history.
 
 **PR A is pushed** — one PR, no RFC.
 
-**Review feedback has to land in two places.** `mtk-genio-dev` was rebased on 2026-09-10, so
-its shas no longer match the commits under review. The PR branch is what reviewers see;
-`mtk-genio-dev` is what everything else is generated from. Fixing one does not fix the other.
+**Review feedback has to land in two places.** The PR branch is what reviewers see;
+`mtk-genio-dev` is what everything else is generated from. Their shas do not match, and fixing
+one does not fix the other.
+
+**`mtk-genio-dev` now carries PR A review round 1**, which overrides the rule that PR A review
+fixes stay on the PR fork until PR A is accepted. It is not a preference: PR B kernel panics on
+the pre-review base, because `mmu_regions.c` there flat-maps the pin controller window and the
+GPIO bank maps the same range again. Round 1 deleted that file. See
+`to-authoring/2026-09-18-prb-needs-round1-base.md`.
+
+PR A itself is at **review round 2** on the live PR, so `mtk-genio-dev` is one round behind and
+needs another sync once PR A settles.
 
 ## Branch tips
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `d4dbd67dc1d` | 18 commits, **rebased onto the new main** with zero conflicts | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
+| `mtk-genio-dev` | `344dc286ede` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers). Force-pushed 2026-09-18 | gates, **700 19/19 GPIO**, 18/18 per-commit |
 | `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):

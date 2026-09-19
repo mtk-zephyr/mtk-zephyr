@@ -6,14 +6,16 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZEPHYR_BASE="${ZEPHYR_BASE:-$HOME/zephyrproject/zephyr}"
 VENV="${VENV:-$HOME/zephyrproject/.venv}"
 BOARD_DIR="${BOARD_DIR:-/root/claude_aary}"
-# The cell configs shipped in /usr/share/jailhouse/cells still grant the inmate
-# a 2 MB window, which is smaller than the 8 MB the board devicetree declares.
-# The patched configs live next to the images, so default there rather than
-# letting the board script fall back to the stock ones: with 2 MB, anything
-# larger than a trivial image drops the cell to `failed` before the console
-# exists, which reads as a mysterious boot failure. Point this at
-# /usr/share/jailhouse/cells to test against the stock grant deliberately.
-CELL_DIR="${CELL_DIR:-$BOARD_DIR/cells}"
+# The stock cells in /usr/share/jailhouse/cells now grant the inmate the full
+# 8 MB the board devicetree declares, so the board script's own default is
+# correct and this is left unset. It used to point at a patched copy under
+# $BOARD_DIR because the shipped configs granted 2 MB; those copies are gone
+# from the boards and the override now names a directory that does not exist,
+# which fails cell creation outright. Set it only to test a specific set of
+# cell configs deliberately.
+#
+# Not every cell was rebuilt: genio-*-evk-zephyr_rpmsg still grants 2 MB.
+CELL_DIR="${CELL_DIR:-}"
 PORT="${PORT:-/dev/ttyUSB0}"
 BAUD=115200
 BUILD_ROOT="${BUILD_ROOT:-$ZEPHYR_BASE/build/tests}"

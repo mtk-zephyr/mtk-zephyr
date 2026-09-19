@@ -64,7 +64,7 @@ Every build until then had used the whole branch, so nothing caught it.
 | Board | Genio 700 or 510 EVK over `adb`, auto-detected from `uname -n` |
 | Serial | `$PORT`, default `/dev/ttyUSB0`, 115200, console on **CN3201** |
 | Board dir | `$BOARD_DIR`, default `/root/claude_aary`, holding `setup-g*.sh` |
-| Cell dir | `$CELL_DIR`, default `$BOARD_DIR/cells`, holding the patched cell configs. The stock `/usr/share/jailhouse/cells` still grant a 2 MB inmate window against the 8 MB the board devicetree declares, so a run against those fails H8 and drops any non-trivial image to `failed` before the console exists. Point this at `/usr/share/jailhouse/cells` to test the stock grant deliberately |
+| Cell dir | `$CELL_DIR`, unset by default so the board script uses `/usr/share/jailhouse/cells`. Those now grant the full 8 MB the board devicetree declares. It previously defaulted to a patched copy under `$BOARD_DIR`, which has since been removed from the boards — pointing at it now fails cell creation outright. Set it only to test a specific set of cell configs. Note `genio-*-evk-zephyr_rpmsg` still grants 2 MB |
 | Compliance base | `$BASE_REF` or `--base-ref`, default `origin/main`. **A branch based on a different upstream must set this** — e.g. `--base-ref upstream-zephyr/main` for the submission branch — or compliance and checkpatch span hundreds of unrelated commits |
 
 Override any of them as environment variables.
