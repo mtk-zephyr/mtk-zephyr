@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-18 (PR B drivers landed on mtk-genio-dev, on the round-1 PR A base)
+# STATUS — as of 2026-09-19 (PR B GPIO and EINT verified 19/19 on both boards)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -20,12 +20,24 @@ GPIO bank maps the same range again. Round 1 deleted that file. See
 PR A itself is at **review round 2** on the live PR, so `mtk-genio-dev` is one round behind and
 needs another sync once PR A settles.
 
+## PR B GPIO and EINT — verified on both parts
+
+19/19 on the Genio 700 (MT8390) and the Genio 510 (MT8370), with a jumper between
+GPIO 38 and GPIO 40. Driving pin 6 in software and sensing pin 8 gives exact event
+counts, which is what proves the both-edges emulation is not inverted — 4 rising and
+4 falling for 4 of each. Detail in
+`to-authoring/2026-09-19-prb-gpio-verified-both-boards.md`.
+
+The suite runs this as **H9** behind `--gpio`, off by default because the jumper is
+not always fitted. Runs now write to `logs/<timestamp>-<agent>-<branch>/` so the two
+agents sharing this workspace cannot overwrite each other's console transcripts.
+
 ## Branch tips
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `344dc286ede` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers). Force-pushed 2026-09-18 | gates, **700 19/19 GPIO**, 18/18 per-commit |
+| `mtk-genio-dev` | `344dc286ede` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers) | gates, **700 19/19 GPIO**, **510 19/19 GPIO**, 18/18 per-commit |
 | `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):

@@ -19,7 +19,26 @@ CELL_DIR="${CELL_DIR:-}"
 PORT="${PORT:-/dev/ttyUSB0}"
 BAUD=115200
 BUILD_ROOT="${BUILD_ROOT:-$ZEPHYR_BASE/build/tests}"
-LOG_DIR="${LOG_DIR:-$TESTS_DIR/logs}"
+
+# Every run gets its own directory, named for when it ran, which agent ran it
+# and what was checked out.  The suite is shared between two agents, and with a
+# single fixed log directory whichever of them ran second silently destroyed the
+# other's evidence -- including the UART transcripts, which are the only record
+# of what a board actually printed.  That has already cost one investigation: a
+# claim that a change had never run on hardware could not be settled because the
+# logs that would have settled it had been overwritten.
+#
+# `logs/latest` points at the newest run so anything reading a fixed path still
+# works.  Set ZT_AGENT in your environment ("dev-agent" / "pr-agent"); runs that
+# do not are recorded as "unknown", which is still separated by time and branch.
+ZT_AGENT="${ZT_AGENT:-unknown}"
+RUN_BRANCH="$(git -C "$ZEPHYR_BASE" rev-parse --abbrev-ref HEAD 2>/dev/null || echo detached)"
+RUN_BRANCH="${RUN_BRANCH//\//-}"
+RUN_ID="$(date +%Y-%m-%dT%H-%M-%S)-${ZT_AGENT}-${RUN_BRANCH}"
+LOG_DIR="${LOG_DIR:-$TESTS_DIR/logs/$RUN_ID}"
+mkdir -p "$LOG_DIR"
+ln -sfn "$(basename "$LOG_DIR")" "$TESTS_DIR/logs/latest" 2>/dev/null || true
+
 LOGGER_ERR=
 
 PASS_COUNT=0

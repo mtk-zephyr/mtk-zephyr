@@ -13,8 +13,12 @@ sources and expected output.
 ./run-tests.sh --gates      # no board needed
 ./run-tests.sh --hardware   # board only
 ./run-tests.sh --adsp       # add the slow ADSP neutrality check
+./run-tests.sh --gpio       # add H9; needs a jumper between GPIO 38 and 40
 ./run-tests.sh --list       # what would run
 ```
+
+Set `ZT_AGENT` (`dev-agent` / `pr-agent`) so a run is attributable: the suite is
+shared between two agents and results are written per run, not per file.
 
 Exit status is 0 only if nothing failed, so it can gate a commit.
 
@@ -29,6 +33,7 @@ firmware/hwtest/          cntfrq + three 5 s sleeps
 firmware/rxtest/          interrupt-driven echo with rx/isr counters
 firmware/reconf/          runtime baud change 115200 -> 9600 -> 115200
 firmware/memtest/         6 MB .bss array proving the granted window
+firmware/gpiotest/        GPIO and EINT drivers, needs a jumper 38 <-> 40
 host/uartlog.py           timestamping serial logger
 host/rxtest_host.py       drives the echo test, verifies byte-for-byte
 host/reconf_host.py       samples the console at each baud
@@ -37,7 +42,8 @@ board/setup-g700.sh       board-side cell bring-up
 board/setup-g510.sh       likewise
 tools/verify-jailhouse-cells.py   inspect cell binaries (not wired into the run)
 tools/bisect-build.sh     build every commit in a range (not wired into the run)
-logs/                     per-test logs, overwritten each run
+tools/run-firmware.sh     flash and run one image by hand, with a safe logger
+logs/<run>/               one directory per run; logs/latest points at the newest
 ```
 
 ### Before submitting a series: `tools/bisect-build.sh`
@@ -133,11 +139,18 @@ from `origin/main`, then compares.
 Expected per target: **zero removed config symbols** and a **byte-identical
 loadable image** (`objcopy -O binary`, md5).
 
-Exactly three symbols are *added* — `CONFIG_SOC_FAMILY="mt8xxx"`,
-`CONFIG_SOC_MTK_ADSP=y`, `CONFIG_SOC_MT81xx_ADSP=y`. They are created by the
-cpucluster split, so they cannot help but appear against a base that predates
-them. **The removals are the half with teeth**: a removal means a DSP lost
-`XTENSA` or its `Kconfig.defconfig` body, which no compile error would catch.
+Symbols are *added* by the cpucluster split — currently
+`CONFIG_SOC_FAMILY="mt8xxx"`, `CONFIG_SOC_FAMILY_MT8XXX=y`, `CONFIG_MTK_ADSP=y`
+and the per-SoC `CONFIG_SOC_MT81xx_ADSP=y` — and cannot help but appear against
+a base that predates them. **The removals are the half with teeth**: a removal
+means a DSP lost `XTENSA` or its `Kconfig.defconfig` body, which no compile
+error would catch.
+
+A removal is tolerated only when it is a *declared* rename whose replacement
+appears in the same diff, listed in `$ADSP_RENAMES` as `OLD=NEW`. PR A review
+round 1 renamed the family symbol, so the default is
+`SOC_FAMILY_MTK=SOC_FAMILY_MT8XXX`. Writing the pair down is the point: an
+accidental drop cannot hide behind a threshold that was simply relaxed.
 
 Costs ten builds; that is why it is opt-in.
 
@@ -328,6 +341,35 @@ Also: the two boards use **different FTDI adapters** — `AB0PKARP` on the 700,
 
 ---
 
+### H9 — GPIO and EINT drivers  *(`--gpio`, needs a jumper)*
+
+Builds `firmware/gpiotest`. **Requires a jumper wire between GPIO 38 and GPIO
+40** — bank 1 pins 6 and 8, the only two the board devicetree leaves unreserved.
+Pin 6 drives, pin 8 senses and takes the interrupt.
+
+Off by default: without the jumper every sense reads back wrong and the failures
+say nothing about the code.
+
+```
+GPIOTEST device ready, drive=pin6 sense=pin8
+PASS B4-both-rising 4 rising edges produced 4 event(s)
+GPIOTEST DONE passed=19 failed=0 -> PASS
+```
+
+Nineteen checks: reserved pins refused (`-EINVAL`), output drives and input reads
+it back, `gpio_pin_toggle` moves the pad, level-triggered interrupts refused
+(`-ENOTSUP`), rising-only and falling-only each fire on their own edge and ignore
+the other, both-edges, and interrupt disable actually silencing delivery.
+
+**Why software edges rather than a button.** The controller detects one condition
+per line, so both-edges is emulated by flipping the polarity inside the handler.
+An inverted flip still produces events — on one edge only — which reads as
+working code until the events are *counted*. Driving pin 6 in software gives
+exact counts with no bounce; a button gives neither. The test asserts four rising
+and four falling, separately.
+
+Both parts pass 19/19: MT8390 on the Genio 700 and MT8370 on the Genio 510.
+
 ## Interpreting a run
 
 ```
@@ -335,8 +377,14 @@ Also: the two boards use **different FTDI adapters** — `AB0PKARP` on the 700,
   FAIL  H2a cntfrq                           got 'nothing', expected 13000000
 ```
 
-Per-test logs land in `logs/`. `logs/uart.log` holds the timestamped console
-for whichever phase ran last.
+Each run writes to its own directory, `logs/<timestamp>-<agent>-<branch>/`, with
+`logs/latest` pointing at the newest — so a path like `logs/latest/uart.log` still
+works. `uart.log` there holds the timestamped console transcript, which is the
+only record of what a board actually printed.
+
+Per-run directories exist because the suite is shared: with one fixed log
+directory, whichever agent ran second silently destroyed the other's evidence.
+That has already prevented one question being settled after the fact.
 
 A failure in H1 with `cell=failed` usually means the image does not fit the
 inmate window — check the declared size against the cell. A failure with

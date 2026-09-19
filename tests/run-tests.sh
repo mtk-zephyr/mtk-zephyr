@@ -12,7 +12,11 @@
 #   ./run-tests.sh                 # everything available
 #   ./run-tests.sh --gates         # gates only
 #   ./run-tests.sh --hardware      # hardware only
+#   ./run-tests.sh --gpio          # add H9, needs a jumper: GPIO 38 to GPIO 40
 #   ./run-tests.sh --list          # show what would run
+#
+# Results go to logs/<timestamp>-<agent>-<branch>/, with logs/latest pointing at
+# the newest.  Set ZT_AGENT so a run is attributable; the suite is shared.
 #
 set -uo pipefail
 
@@ -24,6 +28,10 @@ BASE_REF="${BASE_REF:-origin/main}"
 RUN_GATES=1
 RUN_HW=1
 ADSP_NEUTRALITY=0
+# Off by default: H9 needs a jumper wire between GPIO 38 and 40, which is not
+# always fitted. A run on a board without it would report failures that say
+# nothing about the code.
+RUN_GPIO=0
 LIST_ONLY=0
 
 usage() { sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0; }
@@ -33,6 +41,7 @@ while [ $# -gt 0 ]; do
 	--gates)      RUN_HW=0 ;;
 	--hardware)   RUN_GATES=0 ;;
 	--adsp)       ADSP_NEUTRALITY=1 ;;
+	--gpio)       RUN_GPIO=1 ;;
 	--list)       LIST_ONLY=1 ;;
 	--board)      shift; BOARD_TARGET="$1"; BOARD_TAG=custom ;;
 	--port)       shift; PORT="$1" ;;
@@ -63,6 +72,7 @@ hardware (board + serial):
   H6  tests/drivers/uart/uart_interrupt_api
   H7  cell shutdown/restart cycling
   H8  declared memory window is actually granted
+  H9  GPIO and EINT drivers      [--gpio, needs a jumper GPIO 38 to 40]
 EOF
 	exit 0
 fi
@@ -122,10 +132,16 @@ if [ "$RUN_GATES" = 1 ]; then
 
 	if [ "$ADSP_NEUTRALITY" = 1 ] && [ -n "$BASE" ]; then
 		# The SoC reorganisation must not change the audio DSP platforms. A
-		# config diff alone is weak, so compare the loadable images: expect
-		# exactly three ADDED symbols and ZERO removed. Any removal means a
-		# DSP lost XTENSA or its Kconfig.defconfig body, which no compile
-		# error would catch.
+		# config diff alone is weak, so compare the loadable images too. Any
+		# unexplained removal means a DSP lost XTENSA or its Kconfig.defconfig
+		# body, which no compile error would catch.
+		#
+		# A removal is only accepted when it is a DECLARED rename whose
+		# replacement is present in the same diff. Listing the pair here is the
+		# point: it forces a deliberate rename to be written down, so an
+		# accidental drop cannot hide behind a relaxed rule. Review round 1
+		# renamed the family symbol to match soc.yml, per soc_porting.rst.
+		ADSP_RENAMES="${ADSP_RENAMES:-SOC_FAMILY_MTK=SOC_FAMILY_MT8XXX}"
 		oc="$(ls /home/lab/zephyr-sdk-*/gnu/xtensa-*/bin/*objcopy 2>/dev/null | head -1)"
 		for t in mt8186/mt8186/adsp mt8188/mt8188/adsp mt8195/mt8195/adsp \
 		         mt8196/mt8196/adsp mt8365/mt8365/adsp; do
@@ -136,13 +152,36 @@ if [ "$RUN_GATES" = 1 ]; then
 			west build -p always -b "$t" samples/hello_world -d "$BUILD_ROOT/adsp_base_$d" \
 				>"$LOG_DIR/adsp_base_$d.log" 2>&1
 			git checkout - >/dev/null 2>&1
-			rem=$(diff "$BUILD_ROOT/adsp_base_$d/zephyr/.config" "$BUILD_ROOT/adsp_new_$d/zephyr/.config" | grep -c '^<')
+			cfgdiff=$(diff "$BUILD_ROOT/adsp_base_$d/zephyr/.config" "$BUILD_ROOT/adsp_new_$d/zephyr/.config")
+			added=$(echo "$cfgdiff" | grep '^>' | sed 's/^> //')
+
+			# Classify each removed symbol: a declared rename whose replacement
+			# actually appears in the added set is accounted for; anything else
+			# is a real loss.
+			renamed=0; lost=""
+			while read -r line; do
+				[ -z "$line" ] && continue
+				sym="${line#CONFIG_}"; sym="${sym%%=*}"
+				repl=""
+				for pair in $ADSP_RENAMES; do
+					[ "${pair%%=*}" = "$sym" ] && repl="${pair#*=}"
+				done
+				if [ -n "$repl" ] && echo "$added" | grep -q "^CONFIG_${repl}="; then
+					renamed=$((renamed + 1))
+				else
+					lost="$lost $sym"
+				fi
+			done < <(echo "$cfgdiff" | grep '^<' | sed 's/^< //')
+
 			bm=$("$oc" -O binary "$BUILD_ROOT/adsp_base_$d/zephyr/zephyr.elf" /dev/stdout 2>/dev/null | md5sum | cut -d' ' -f1)
 			nm=$("$oc" -O binary "$BUILD_ROOT/adsp_new_$d/zephyr/zephyr.elf" /dev/stdout 2>/dev/null | md5sum | cut -d' ' -f1)
-			if [ "$rem" = "0" ] && [ "$bm" = "$nm" ]; then
-				pass "G4 adsp $t" "0 removed, binary identical"
+
+			if [ -z "$lost" ] && [ "$bm" = "$nm" ]; then
+				pass "G4 adsp $t" "$([ "$renamed" -gt 0 ] && echo "$renamed declared rename(s), ")no losses, binary identical"
+			elif [ -n "$lost" ]; then
+				fail "G4 adsp $t" "lost:$lost — binary $([ "$bm" = "$nm" ] && echo same || echo DIFFERS)"
 			else
-				fail "G4 adsp $t" "$rem config line(s) removed, binary $([ "$bm" = "$nm" ] && echo same || echo DIFFERS)"
+				fail "G4 adsp $t" "binary DIFFERS despite no config loss"
 			fi
 		done
 	elif [ "$ADSP_NEUTRALITY" = 1 ]; then
@@ -283,6 +322,35 @@ PY
 		fi
 	else
 		fail "H8 memory window" "build or flash failed"
+	fi
+
+	# --- H9: GPIO and EINT drivers  (--gpio, needs a jumper) -------------
+	# Pin 6 (GPIO 38) drives and pin 8 (GPIO 40) senses, through a jumper
+	# between them. Producing the edges in software rather than with a button
+	# is what makes the event counts exact, and an exact count is the only
+	# thing that distinguishes correct both-edges emulation from a polarity
+	# flip that is inverted -- that fires on one edge and looks like working
+	# code until someone counts.
+	if [ "$RUN_GPIO" = 1 ]; then
+		if build_image "$TESTS_DIR/firmware/gpiotest" gpiotest \
+		   && flash_image "$IMAGE_BIN" "zephyr-$BOARD_TAG-gpiotest.bin"; then
+			: > "$UART_LOG"; run_cell "zephyr-$BOARD_TAG-gpiotest.bin"
+			for _ in $(seq 30); do
+				grep -q 'GPIOTEST DONE' "$UART_LOG" && break
+				sleep 1
+			done
+			if grep -q 'GPIOTEST DONE .* -> PASS' "$UART_LOG"; then
+				pass "H9 GPIO and EINT" "$(grep -oP 'GPIOTEST DONE \K.*(?= ->)' "$UART_LOG" | head -1)"
+			elif grep -q 'GPIOTEST DONE' "$UART_LOG"; then
+				fail "H9 GPIO and EINT" "$(grep -oP 'GPIOTEST DONE \K.*(?= ->)' "$UART_LOG" | head -1); first failure: $(grep -m1 '^FAIL ' "$UART_LOG" | cut -c1-60)"
+			else
+				fail "H9 GPIO and EINT" "no verdict — cell=$(cell_state); jumper between GPIO 38 and 40 fitted?"
+			fi
+		else
+			fail "H9 GPIO and EINT" "build or flash failed"
+		fi
+	else
+		skip "H9 GPIO and EINT" "needs --gpio and a jumper between GPIO 38 and 40"
 	fi
 	stop_logger
 fi
