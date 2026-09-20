@@ -402,3 +402,11 @@ SPDX-License-Identifier = "MIT"
 SPDX-FileComment = "Compiled into the firmware only when the Xtensa reset vector is enabled."
 Zephyr-Description = "Xtensa Startup Assembly Files"
 Zephyr-Kconfig-Condition = "CONFIG_XTENSA_RESET_VECTOR"
+
+[[annotations]]
+path = "drivers/audio/mt8188_afe/mt8188_afe_reg.h"
+SPDX-License-Identifier = "GPL-2.0"
+SPDX-FileComment = "MT8188 audio register definitions taken from the Linux kernel driver of the same name. Unlike the other GPL-2.0 entries here it is compiled into the firmware, and unlike subsys/fs/fuse_client/fuse_abi.h it is not dual licensed, so it has no permissive option to be used under. Not yet resolved: the copyright holder is MediaTek, who can relicense or dual license it, or regenerate the definitions."
+Zephyr-Description = "MediaTek MT8188 Audio Front End Register Definitions"
+Zephyr-Origin = "https://www.kernel.org/"
+Zephyr-Kconfig-Condition = "CONFIG_AUDIO_MT8188_AFE"

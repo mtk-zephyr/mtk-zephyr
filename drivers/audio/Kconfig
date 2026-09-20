@@ -133,4 +133,9 @@ source "drivers/audio/Kconfig.dmic_stm32"
 
 endif # AUDIO_DMIC
 
+# The Audio Front End is neither a codec nor a digital microphone: it moves
+# samples between memory and the die's serial ports, so it sits at this level
+# rather than inside either of the blocks above.
+source "drivers/audio/Kconfig.mt8188_afe"
+
 endif # AUDIO

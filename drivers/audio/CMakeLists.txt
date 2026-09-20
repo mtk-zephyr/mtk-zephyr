@@ -34,6 +34,8 @@ zephyr_library_sources_ifdef(CONFIG_AUDIO_TLV320AIC3110 tlv320aic3110.c)
 zephyr_library_sources_ifdef(CONFIG_AUDIO_TLV320DAC tlv320dac310x.c)
 # zephyr-keep-sorted-stop
 
+add_subdirectory_ifdef(CONFIG_AUDIO_MT8188_AFE mt8188_afe)
+
 if(CONFIG_AUDIO_DMIC_NATIVE_SIM)
   target_sources(native_simulator INTERFACE dmic_native_sim_bottom.c)
 endif()
