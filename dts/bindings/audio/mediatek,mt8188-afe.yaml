@@ -1,0 +1,52 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  MediaTek MT8188 Audio Front End.
+
+  Moves samples between memory and the die's eTDM serial ports.  The interface
+  callers use is in <zephyr/drivers/audio/mt8188_afe.h>.
+
+  Note that the audio DSP on this die carries a separate "mediatek,afe" binding
+  used by SOF, describing the same hardware from the DSP's side.  The two are
+  independent.
+
+compatible: "mediatek,mt8188-afe"
+
+include: [base.yaml, pinctrl-device.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  pinctrl-0:
+    description: |
+      The eTDM pins this board brings out, which the driver selects at init.
+      Optional, because the pins a board wires to the ports are a board matter
+      and one that has already muxed them elsewhere need not repeat it here.
+
+  clocks:
+    required: true
+
+  clock-names:
+    required: true
+    description: |
+      The clocks the AFE consumes.  Three of the names also identify the
+      controllers the driver talks to directly, so they have to be present:
+      "apll1" names the PLL controller, "top_a1sys_hp" the top-level clock
+      controller, and "infra_audio" the always-on infrastructure controller.
+
+  memory-region:
+    type: phandle
+    description: |
+      Region the AFE reads playback samples from and writes captured samples
+      to.  The AFE does not share the processor's caches, so the driver maps
+      this region non-cacheable; placing buffers anywhere else leaves capture
+      reading stale data and playback sending lines the AFE never sees.
+
+      A region outside the image also keeps a misprogrammed transfer away from
+      the running program.  Omit it and the driver maps nothing, which suits a
+      board that has no audio buffers to place.
