@@ -71,6 +71,12 @@
 		status = "okay";
 	};
 
+	topckgen: topckgen@10000000 {
+		compatible = "mediatek,mt8188-topckgen";
+		reg = <0x10000000 0x1000>;
+		#clock-cells = <1>;
+	};
+
 	apmixedsys: apmixedsys@1000c000 {
 		compatible = "mediatek,mt8188-apmixedsys";
 		reg = <0x1000c000 0x1000>;
