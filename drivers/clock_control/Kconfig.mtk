@@ -16,3 +16,12 @@ config CLOCK_CONTROL_MT8188_APMIXED
 	help
 	  Enable the phase-locked loops in the MT8188 APMIXEDSYS block,
 	  including the APLL1 and APLL2 audio pair.
+
+config CLOCK_CONTROL_MT8188_TOPCKGEN
+	bool "MediaTek MT8188 TOPCKGEN clock controller"
+	default y
+	depends on DT_HAS_MEDIATEK_MT8188_TOPCKGEN_ENABLED
+	help
+	  Enable the top-level muxes, dividers and gates that distribute the
+	  MT8188 PLL outputs, including the audio timing domains and the
+	  per-port audio master clocks.
