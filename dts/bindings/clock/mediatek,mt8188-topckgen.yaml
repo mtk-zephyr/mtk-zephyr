@@ -1,0 +1,33 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  MediaTek MT8188 TOPCKGEN clock controller.
+
+  Provides the top-level muxes, dividers and gates that distribute the PLL
+  outputs to the rest of the die.  A consumer selects a clock with the matching
+  CLK_TOP_* identifier from <zephyr/dt-bindings/clock/mtk_mt8188_clock.h>, for
+  example:
+
+    &afe {
+            clocks = <&topckgen CLK_TOP_A1SYS_HP>;
+    };
+
+  Clocks whose parent depends on the stream, such as the per-port audio master
+  clock muxes, take their parent through the clock_control_configure() call
+  rather than from a fixed value here, so that enabling a gate does not
+  disturb a parent selected at runtime.
+
+compatible: "mediatek,mt8188-topckgen"
+
+include: [clock-controller.yaml, base.yaml]
+
+properties:
+  reg:
+    required: true
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - name
