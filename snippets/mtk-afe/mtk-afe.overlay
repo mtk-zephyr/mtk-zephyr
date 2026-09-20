@@ -1,0 +1,34 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <mem.h>
+
+/ {
+	/*
+	 * Where the Audio Front End reads playback samples from and writes
+	 * captured samples to.  Deliberately outside zephyr,sram: the AFE is a
+	 * bus master with no address translation in front of it, so keeping its
+	 * buffers away from the image, the stacks and the heap means a
+	 * misprogrammed transfer cannot reach them.
+	 *
+	 * Place buffers here with
+	 *   Z_GENERIC_SECTION(LINKER_DT_NODE_REGION_NAME(DT_NODELABEL(dma_region)))
+	 * and hand their physical address to mt8188_afe_set_buf().
+	 */
+	dma_region: memory@61000000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		device_type = "memory";
+		reg = <0x61000000 DT_SIZE_M(8)>;
+		zephyr,memory-region = "DMA_REGION";
+	};
+};
+
+&afe {
+	pinctrl-0 = <&etdm_default>;
+	pinctrl-names = "default";
+	memory-region = <&dma_region>;
+	status = "okay";
+};
