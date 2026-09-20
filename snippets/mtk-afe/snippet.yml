@@ -1,0 +1,13 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+name: mtk-afe
+description: Enables the MediaTek Audio Front End and the buffer region it uses.
+
+boards:
+  # Both Genio EVKs include mt8188.dtsi, which defines the AFE node, and
+  # route the audio serial pins identically.
+  /.*mt(8390_genio_700|8370_genio_510)_evk.*/:
+    append:
+      EXTRA_CONF_FILE: mtk-afe.conf
+      EXTRA_DTC_OVERLAY_FILE: mtk-afe.overlay
