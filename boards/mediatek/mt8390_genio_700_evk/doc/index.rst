@@ -86,6 +86,22 @@ banks are disabled for the same reason. Both usable pins carry JTAG signals in
 every function other than GPIO, so the board selects the GPIO function for them
 in its pin control state.
 
+Both are brought out on the 40-pin Raspberry Pi HAT header:
+
+=========  ==================  ==================
+Bank pin   SoC GPIO            Header pin
+=========  ==================  ==================
+6          GPIO 38             22
+8          GPIO 40             18
+=========  ==================  ==================
+
+.. note::
+
+   Header pins 18 and 22 are both on the even-numbered row with **pin 20, a
+   ground pin, between them**. A two-position jumper block cannot bridge them,
+   and one fitted across 18-20 or 20-22 would tie a usable pin to ground. The
+   loopback needs a wire.
+
 Pin interrupts are delivered by the SoC's external interrupt controller. Rising,
 falling and both-edge triggers are available. Level triggers are not: the
 controller's own output to the GIC is level-triggered, so a level that stays
