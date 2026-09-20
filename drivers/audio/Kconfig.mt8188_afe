@@ -1,0 +1,23 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config AUDIO_MT8188_AFE
+	bool "MediaTek MT8188 Audio Front End"
+	default y
+	depends on DT_HAS_MEDIATEK_MT8188_AFE_ENABLED
+	depends on CLOCK_CONTROL_MT8188_APMIXED
+	depends on CLOCK_CONTROL_MT8188_TOPCKGEN
+	depends on CLOCK_CONTROL_MT8188_INFRA_AO
+	select PINCTRL
+	help
+	  Enable the Audio Front End, which moves samples between memory and
+	  the die's eTDM serial ports.
+
+	  The interface callers use is in
+	  <zephyr/drivers/audio/mt8188_afe.h>.  It is not the Zephyr DAI
+	  interface: the routing matrix, the channel-merge units and the
+	  cowork'd port pairs have no expression in DAI.
+
+	  The three clock controllers are required rather than selected because
+	  the AFE reaches them through the clocks its devicetree node names, so
+	  a configuration without them would not describe working hardware.
