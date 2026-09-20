@@ -91,6 +91,46 @@ falling and both-edge triggers are available. Level triggers are not: the
 controller's own output to the GIC is level-triggered, so a level that stays
 asserted would re-enter the handler for as long as it lasts.
 
+Audio
+-----
+
+The Audio Front End is off by default and enabled with the ``mtk-afe`` snippet,
+which turns on the AFE node, selects the eTDM pins and reserves an 8 MB buffer
+region at ``0x61000000``:
+
+.. code-block:: console
+
+   west build -b mt8390_genio_700_evk/mt8188/a55 -S mtk-afe <app>
+
+.. important::
+
+   An image built with this snippet needs a Jailhouse cell that grants the AFE.
+   The ``genio-700-evk-zephyr-afe`` cell does; the plain ``genio-700-evk-zephyr``
+   cell grants none of the five register blocks the driver touches, and the
+   inmate is stopped on the first access. Build without the snippet for that
+   cell.
+
+The snippet is deliberately separate rather than being part of the board, so
+the default image keeps working on the plain cell.
+
+This board and the Genio 510 EVK route the audio serial pins identically, so
+both take their eTDM pin control state from
+:zephyr_file:`boards/mediatek/common/genio-evk-pinctrl-common.dtsi`. The ports
+reach the following pins:
+
+=========  ===================  ===================
+Port       Signals              Pins
+=========  ===================  ===================
+eTDM_IN1   MCK, BCK, LRCK, DI   125, 126, 127, 128
+eTDM_IN2   MCK, BCK, WS, D0     107, 108, 109, 110
+eTDM_OUT1  MCK, BCK, WS, D0     4, 5, 6, 11
+eTDM_OUT2  MCK, BCK, WS, D0     114, 115, 116, 117
+=========  ===================  ===================
+
+The interface is in :zephyr_file:`include/zephyr/drivers/audio/mt8188_afe.h`.
+It is not the Zephyr DAI interface: the routing matrix, the channel-merge units
+and the co-clocked port pairs have no expression in DAI.
+
 Programming and Debugging
 *************************
 

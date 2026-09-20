@@ -26,3 +26,10 @@
 		};
 	};
 };
+
+/*
+ * Included last so the board's own states keep the devicetree order they
+ * had before this file existed: node order decides DT_FOREACH_CHILD order
+ * and the child indices.
+ */
+#include "../common/genio-evk-pinctrl-common.dtsi"
