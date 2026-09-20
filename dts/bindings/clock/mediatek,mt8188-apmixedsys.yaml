@@ -1,0 +1,28 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  MediaTek MT8188 APMIXEDSYS PLL clock controller.
+
+  Provides the die's phase-locked loops, of which APLL1 and APLL2 are the audio
+  pair: APLL1 serves the 48 kHz sample-rate family and APLL2 the 44.1 kHz one.
+  A consumer selects a PLL with the matching CLK_APMIXED_* identifier from
+  <zephyr/dt-bindings/clock/mtk_mt8188_clock.h>, for example:
+
+    &afe {
+            clocks = <&apmixedsys CLK_APMIXED_APLL1>;
+    };
+
+compatible: "mediatek,mt8188-apmixedsys"
+
+include: [clock-controller.yaml, base.yaml]
+
+properties:
+  reg:
+    required: true
+
+  "#clock-cells":
+    const: 1
+
+clock-cells:
+  - name
