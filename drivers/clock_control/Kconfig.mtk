@@ -8,3 +8,11 @@ config CLOCK_CONTROL_MT8188_INFRA_AO
 	help
 	  Enable the peripheral gate clocks in the MT8188 infra always-on
 	  subsystem.
+
+config CLOCK_CONTROL_MT8188_APMIXED
+	bool "MediaTek MT8188 APMIXEDSYS PLL clock controller"
+	default y
+	depends on DT_HAS_MEDIATEK_MT8188_APMIXEDSYS_ENABLED
+	help
+	  Enable the phase-locked loops in the MT8188 APMIXEDSYS block,
+	  including the APLL1 and APLL2 audio pair.
