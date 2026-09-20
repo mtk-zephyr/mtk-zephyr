@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Pin control states shared by the Genio EVKs.
+ *
+ * The Genio 700 EVK (MT8390) and the Genio 510 EVK (MT8370) are reference
+ * designs around the same die and route the audio serial pins identically, so
+ * the states below describe both.  A board that routed them differently would
+ * declare its own rather than include this.
+ */
+
+#include <zephyr/dt-bindings/pinctrl/mt8188-pinctrl.h>
+
+&pinctrl {
+	etdm_default: etdm_default {
+		/*
+		 * Capture: eTDM_IN1 (TDMIN) — MCK/BCK/LRCK + data in.
+		 * Feeds UL8 16ch, and channels 1-16 of UL9 32ch (cowork master).
+		 */
+		etdm_in1 {
+			pinmux = <PINMUX_PIN_127__FUNC_B0_TDMIN_LRCK>,
+				 <PINMUX_PIN_128__FUNC_I0_TDMIN_DI>,
+				 <PINMUX_PIN_125__FUNC_B0_TDMIN_MCK>,
+				 <PINMUX_PIN_126__FUNC_B0_TDMIN_BCK>;
+		};
+
+		/*
+		 * Capture: eTDM_IN2 (I2SIN) — MCK/BCK/WS + data in.
+		 * Feeds UL3 16ch (standalone master, using these clocks), and
+		 * channels 17-32 of UL9 32ch (cowork slave, where sync comes
+		 * from eTDM_IN1 instead).
+		 */
+		etdm_in2 {
+			pinmux = <PINMUX_PIN_107__FUNC_B0_I2SIN_MCK>,
+				 <PINMUX_PIN_108__FUNC_B0_I2SIN_BCK>,
+				 <PINMUX_PIN_109__FUNC_B0_I2SIN_WS>,
+				 <PINMUX_PIN_110__FUNC_I0_I2SIN_D0>;
+		};
+
+		/*
+		 * Playback: eTDM_OUT1 (I2SO1) — MCK/BCK/WS + data out.
+		 * Carries channels 1-16 of DL11 32ch, or DL11 16ch.
+		 * In DL11 32ch cowork mode these pins also supply BCK/WS for
+		 * eTDM_OUT2, which is the cowork slave.
+		 */
+		etdm_out1 {
+			pinmux = <PINMUX_PIN_4__FUNC_O_I2SO1_MCK>,
+				 <PINMUX_PIN_5__FUNC_O_I2SO1_BCK>,
+				 <PINMUX_PIN_6__FUNC_O_I2SO1_WS>,
+				 <PINMUX_PIN_11__FUNC_O_I2SO1_D0>;
+		};
+
+		/*
+		 * Playback: eTDM_OUT2 (I2SO2) — MCK/BCK/WS + data out.
+		 * Carries DL8 16ch (standalone master, using these clocks), or
+		 * channels 17-32 of DL11 32ch (cowork slave, where BCK/WS are
+		 * driven from eTDM_OUT1 instead).
+		 */
+		etdm_out2 {
+			pinmux = <PINMUX_PIN_114__FUNC_O_I2SO2_MCK>,
+				 <PINMUX_PIN_115__FUNC_B0_I2SO2_BCK>,
+				 <PINMUX_PIN_116__FUNC_B0_I2SO2_WS>,
+				 <PINMUX_PIN_117__FUNC_O_I2SO2_D0>;
+		};
+	};
+};
