@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-19 (PR B passes the upstream GPIO conformance suite; copyright at 2026)
+# STATUS — as of 2026-09-20 (mtk-genio-dev migrated to PR A review round 2)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -45,12 +45,39 @@ Overlays naming the two pins ship with the series under
 Files held by other parties — the ChromiumOS notices under `soc/mediatek` — are
 deliberately untouched.
 
+## Branch policy — read this before resyncing
+
+`mtk-genio-dev` **rebases freely and is force-pushed.** It imports whatever PR A
+currently is, plus the feature work on top. PR A is under review, so it is mutable, and
+anything built on it inherits that. Always
+`git fetch && git reset --hard origin/mtk-genio-dev`.
+
+The distinction that matters: **re-parenting** moves your commits onto a new base
+unchanged, **rewriting** alters them. Resyncs must be the first. The round 1 -> round 2
+migration re-parented all six PR B commits with identical diffs *and* messages.
+
+`pra-r2` tags the PR A tip, so the next resync is one command that preserves everything
+above it:
+
+    git rebase --onto pra-r3 pra-r2 mtk-genio-dev
+
+Resync **on impact, not on every review comment** — the question is whether any file the
+feature work modifies differs between rounds. And a clean rebase does not prove the result
+runs: PR B once kernel panicked on a base it rebased onto cleanly. Re-run hardware when the
+PR A delta touches SoC, pinctrl or MMU code.
+
+`mtk-v4.4.2` is the opposite contract: **append-only, never rewritten.** Changes to earlier
+work land as new commits on top, each naming what it changes as
+`commit <12-char sha> ("subject")`. It takes a feature once that feature is structurally
+settled, not on a schedule. It is not upstreamable — a fix-on-top history cannot produce a
+clean series.
+
 ## Branch tips
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `8b348fc37a2` | **21 commits**: 15 PR A *review round 1* + 6 PR B (GPIO and EINT drivers) | gates, **19/19 GPIO** and **`gpio_basic_api`** on both boards, 18/18 per-commit |
+| `mtk-genio-dev` | `a3a352da5ce` | **22 commits**: 16 PR A *review round 2* + 6 PR B. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 39/39 per-commit, **11/11 hardware on both boards** |
 | `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):

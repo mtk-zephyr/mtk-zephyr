@@ -365,11 +365,23 @@ PY
 				grep -qE 'PROJECT EXECUTION (SUCCESSFUL|FAILED)' "$UART_LOG" && break
 				sleep 1
 			done
-			if grep -q 'PROJECT EXECUTION SUCCESSFUL' "$UART_LOG"; then
+			# Count from the TESTSUITE SUMMARY block, whose lines read
+			# " - PASS - [suite.test] duration = ...". Do not anchor on ^:
+			# every line carries a "[timestamp] " prefix from the logger.
+			# Do not match the per-test lines either -- those read
+			# " PASS - name", and "SUITE PASS -" would be caught too.
+			gp=$(grep -c -- '- PASS - \[' "$UART_LOG")
+			gs=$(grep -c -- '- SKIP - \[' "$UART_LOG")
+			if grep -q 'PROJECT EXECUTION SUCCESSFUL' "$UART_LOG" && [ "$gp" -gt 0 ]; then
 				# Two config_trigger tests skip themselves on this SoC:
 				# open-drain lives in the pin controller, so the driver
 				# returns -ENOTSUP and the test opts out. Expected.
-				pass "H10 gpio_basic_api" "$(grep -c '^ - PASS' "$UART_LOG") passed, $(grep -c '^ - SKIP' "$UART_LOG") skipped (open-drain)"
+				pass "H10 gpio_basic_api" "$gp passed, $gs skipped (open-drain)"
+			elif grep -q 'PROJECT EXECUTION SUCCESSFUL' "$UART_LOG"; then
+				# Ran to completion having executed nothing. Almost always
+				# the devicetree overlay naming the two pins is missing for
+				# this board, so the suite filtered itself out.
+				fail "H10 gpio_basic_api" "reported success but ran 0 tests — is the board overlay present?"
 			else
 				fail "H10 gpio_basic_api" "$(grep -m1 -oP '^ - FAIL.*' "$UART_LOG" || echo "no verdict — cell=$(cell_state)")"
 			fi
