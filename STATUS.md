@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-20 (mtk-genio-dev migrated to PR A review round 2)
+# STATUS — as of 2026-09-20 (both work branches on PR A review round 2)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -78,7 +78,7 @@ clean series.
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
 | `mtk-genio-dev` | `a3a352da5ce` | **22 commits**: 16 PR A *review round 2* + 6 PR B. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 39/39 per-commit, **11/11 hardware on both boards** |
-| `mtk-v4.4.2` | `ee452133d05` | 18 commits on `v4.4.2`, **rebuilt at full parity** with dev | gates, **700 13/13**, **510 13/13**, **29/29 per-commit** |
+| `mtk-v4.4.2` | `05ef8eea7ec` | **22 commits** on `v4.4.2`: round-2 PR A + PR B, level with dev. Rebuilt cleanly — no customer is on it yet | gates 9/9, ADSP byte-identical, 39/39 per-commit, **700 11/11** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
 
