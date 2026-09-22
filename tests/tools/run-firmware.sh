@@ -3,6 +3,12 @@
 #
 #   tools/run-firmware.sh <image.bin> <done-pattern> [tag]
 #
+# SETUP names the board-side bring-up script, defaulting to the one for the
+# detected board.  Point it at setup-afe.sh to run under the cell that grants
+# the Audio Front End:
+#
+#   SETUP=setup-afe.sh tools/run-firmware.sh build/zephyr/zephyr.bin 'PASS --'
+#
 # For running a single test image by hand, outside a full suite run. The suite
 # does this internally; this is for when you want one firmware and one console
 # transcript without the rest of the tier.
@@ -36,8 +42,22 @@ if [ -n "$holder" ]; then
 fi
 
 detect_board || { echo "no board detected" >&2; exit 1; }
+
+SETUP_PATH="$BOARD_SETUP"
+if [ -n "${SETUP:-}" ]; then
+	SETUP_PATH="$BOARD_DIR/$(basename "$SETUP")"
+fi
+
+# Upload before running.  Only the basename reaches the board script, so
+# without this the run would use whatever image already carried that name --
+# silently testing a stale binary, which reads as a result rather than a
+# mistake.
+REMOTE="$(basename "$IMAGE")"
+flash_image "$IMAGE" "$REMOTE" || { echo "could not upload $IMAGE" >&2; exit 1; }
+
 echo "board  $BOARD_HOST -> $BOARD_TARGET"
 echo "image  $IMAGE"
+echo "setup  $SETUP_PATH"
 echo "log    $LOG"
 echo
 
@@ -47,7 +67,7 @@ LP=$!
 trap 'kill "$LP" 2>/dev/null' EXIT
 sleep 3
 
-adb shell "${CELL_DIR:+CELL_DIR=$CELL_DIR }$BOARD_SETUP $(basename "$IMAGE")" >/dev/null 2>&1
+adb shell "${CELL_DIR:+CELL_DIR=$CELL_DIR }$SETUP_PATH $REMOTE" >/dev/null 2>&1
 
 for _ in $(seq 1 30); do
 	grep -q "$PATTERN" "$LOG" 2>/dev/null && break

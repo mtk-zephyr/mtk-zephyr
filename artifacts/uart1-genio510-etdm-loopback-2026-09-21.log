@@ -1,0 +1,119 @@
+# eTDM loopback, Genio 510 EVK, 2026-09-21
+# Genio 700 image (-S mtk-afe) under genio-700-evk-zephyr-afe.cell.
+
+=============== mt8188_loopback_dl11_ul8
+--- logger attached to /dev/ttyUSB0 ---
+*** Booting Zephyr OS build v4.4.0-14936-ge17c46a2b7ec ***
+MT8188 DL11→UL8 loopback: 16 ch, 48000 Hz, 32-bit, DSP-B
+  play buffer 0x6104b000 (307200 bytes), capture buffer 0x61000000
+  BCK 24576000 Hz — wire I2SO1 BCK/WS/D0 to TDMIN BCK/LRCK/DI
+  startup, both DMA pointers sampled every ~20 us:
+    t=    0 us  DL11    0 fr  UL8    0 fr  ahead by   0 fr
+    t=   21 us  DL11   15 fr  UL8    0 fr  ahead by  15 fr
+    t=   42 us  DL11   30 fr  UL8    0 fr  ahead by  30 fr
+    t=   63 us  DL11   45 fr  UL8    0 fr  ahead by  45 fr
+    t=   84 us  DL11   59 fr  UL8    0 fr  ahead by  59 fr
+    t=  105 us  DL11   68 fr  UL8    1 fr  ahead by  67 fr
+    t=  996 us  DL11  111 fr  UL8   44 fr  ahead by  67 fr
+running — data handled every 5 ms from the timer interrupt
+[   1s] played 54720 fr  verified 49920 fr  ticks 209  rot 0 lag -1  isr max 1577 us
+[   2s] played 103200 fr  verified 98400 fr  ticks 411  rot 0 lag -1  isr max 1579 us
+[   3s] played 151680 fr  verified 146880 fr  ticks 612  rot 0 lag -1  isr max 1579 us
+[   4s] played 200160 fr  verified 195360 fr  ticks 814  rot 0 lag -1  isr max 1579 us
+[   5s] played 248640 fr  verified 243840 fr  ticks 1016  rot 0 lag -1  isr max 1579 us
+[   6s] played 296640 fr  verified 291840 fr  ticks 1217  rot 0 lag -1  isr max 1579 us
+[   7s] played 345120 fr  verified 340320 fr  ticks 1419  rot 0 lag -1  isr max 1579 us
+[   8s] played 393600 fr  verified 388800 fr  ticks 1621  rot 0 lag -1  isr max 1579 us
+[   9s] played 442080 fr  verified 437280 fr  ticks 1822  rot 0 lag -1  isr max 1579 us
+[  10s] played 490560 fr  verified 485760 fr  ticks 2024  rot 0 lag -1  isr max 1579 us
+[  11s] played 539040 fr  verified 534240 fr  ticks 2226  rot 0 lag -1  isr max 1579 us
+[  12s] played 587040 fr  verified 582240 fr  ticks 2427  rot 0 lag -1  isr max 1579 us
+[  13s] played 635520 fr  verified 630720 fr  ticks 2629  rot 0 lag -1  isr max 1579 us
+[  14s] played 684000 fr  verified 679200 fr  ticks 2831  rot 0 lag -1  isr max 1579 us
+[  15s] played 732480 fr  verified 727680 fr  ticks 3033  rot 0 lag -1  isr max 1579 us
+[  16s] played 780960 fr  verified 776160 fr  ticks 3234  rot 0 lag -1  isr max 1579 us
+[  17s] played 829440 fr  verified 824640 fr  ticks 3436  rot 0 lag -1  isr max 1579 us
+[  18s] played 877440 fr  verified 872640 fr  ticks 3637  rot 0 lag -1  isr max 1579 us
+[  19s] played 925920 fr  verified 921120 fr  ticks 3839  rot 0 lag -1  isr max 1579 us
+
+=============== mt8188_loopback_dl8_ul3
+--- logger attached to /dev/ttyUSB0 ---
+
+[  25s] played 1216320 fr  verified 1211520 fr  ticks 5049  rot 0 lag -1  isr max 1579 us
+[  26s] played 1264800 fr  verified 1260000 fr  ticks 5251  rot 0 lag -1  isr max 1579 us
+[  27s] played 1313280 fr  verified 1308480 fr  ticks 5453  rot 0 lag -1  isr max 1579 us
+*** Booting Zephyr OS build v4.4.0-14936-ge17c46a2b7ec ***
+MT8188 DL8→UL3 loopback: 16 ch, 48000 Hz, 32-bit, DSP-B
+  play buffer 0x6104b000 (307200 bytes), capture buffer 0x61000000
+  BCK 24576000 Hz — wire I2SO2 MCK/BCK/WS/D0 to I2SIN MCK/BCK/WS/D0
+  startup, both DMA pointers sampled every ~20 us:
+    t=    0 us  DL8    0 fr  UL3    0 fr  ahead by   0 fr
+    t=   22 us  DL8   15 fr  UL3    0 fr  ahead by  15 fr
+    t=   43 us  DL8   30 fr  UL3    0 fr  ahead by  30 fr
+    t=   64 us  DL8   45 fr  UL3    0 fr  ahead by  45 fr
+    t=   86 us  DL8   60 fr  UL3    1 fr  ahead by  59 fr
+    t=  107 us  DL8   68 fr  UL3    2 fr  ahead by  66 fr
+    t= 1002 us  DL8  110 fr  UL3   45 fr  ahead by  65 fr
+running — data handled every 5 ms from the timer interrupt
+[   1s] played 54720 fr  verified 49920 fr  ticks 209  rot 0 lag 30  isr max 1578 us
+[   2s] played 103200 fr  verified 98400 fr  ticks 411  rot 0 lag 30  isr max 1578 us
+[   3s] played 151680 fr  verified 146880 fr  ticks 612  rot 0 lag 30  isr max 1578 us
+[   4s] played 200160 fr  verified 195360 fr  ticks 814  rot 0 lag 30  isr max 1578 us
+[   5s] played 248640 fr  verified 243840 fr  ticks 1016  rot 0 lag 30  isr max 1578 us
+[   6s] played 296640 fr  verified 291840 fr  ticks 1217  rot 0 lag 30  isr max 1578 us
+[   7s] played 345120 fr  verified 340320 fr  ticks 1419  rot 0 lag 30  isr max 1578 us
+[   8s] played 393600 fr  verified 388800 fr  ticks 1621  rot 0 lag 30  isr max 1578 us
+[   9s] played 442080 fr  verified 437280 fr  ticks 1822  rot 0 lag 30  isr max 1579 us
+[  10s] played 490560 fr  verified 485760 fr  ticks 2024  rot 0 lag 30  isr max 1579 us
+[  11s] played 539040 fr  verified 534240 fr  ticks 2226  rot 0 lag 30  isr max 1579 us
+[  12s] played 587040 fr  verified 582240 fr  ticks 2427  rot 0 lag 30  isr max 1579 us
+[  13s] played 635520 fr  verified 630720 fr  ticks 2629  rot 0 lag 30  isr max 1579 us
+[  14s] played 684000 fr  verified 679200 fr  ticks 2831  rot 0 lag 30  isr max 1579 us
+[  15s] played 732480 fr  verified 727680 fr  ticks 3032  rot 0 lag 30  isr max 1579 us
+[  16s] played 780960 fr  verified 776160 fr  ticks 3234  rot 0 lag 30  isr max 1579 us
+[  17s] played 829440 fr  verified 824640 fr  ticks 3436  rot 0 lag 30  isr max 1579 us
+[  18s] played 877440 fr  verified 872640 fr  ticks 3637  rot 0 lag 30  isr max 1579 us
+[  19s] played 925920 fr  verified 921120 fr  ticks 3839  rot 0 lag 30  isr max 1579 us
+
+=============== mt8188_loopback_dl11_ul9
+--- logger attached to /dev/ttyUSB0 ---
+
+[  28s] played 1361760 fr  verified 1356960 fr  ticks 5654  rot 0 lag 30  isr max 1580 us
+[  29s] played 1410240 fr  verified 1405440 fr  ticks 5856  rot 0 lag 30  isr max 1580 us
+[  30s] played 1458720 fr  verified 1453920 fr  ticks 6058  rot 0 lag 30  isr max 1580 us
+*** Booting Zephyr OS build v4.4.0-14936-ge17c46a2b7ec ***
+MT8188 DL11→UL9 loopback: 32 ch, 48000 Hz, 32-bit, DSP-B
+  play buffer 0x61096000 (614400 bytes), capture buffer 0x61000000
+  BCK 24576000 Hz — wire I2SO1 MCK/BCK/WS/D0 to TDMIN MCK/BCK/LRCK/DI
+  startup, both DMA pointers sampled every ~20 us:
+    t=    0 us  DL11    0 fr  UL9    1 fr  ahead by  -1 fr
+    t=   21 us  DL11    7 fr  UL9    2 fr  ahead by   5 fr
+    t=   43 us  DL11   14 fr  UL9    3 fr  ahead by  11 fr
+    t=   64 us  DL11   21 fr  UL9    4 fr  ahead by  17 fr
+    t=   85 us  DL11   28 fr  UL9    5 fr  ahead by  23 fr
+    t=  107 us  DL11   35 fr  UL9    6 fr  ahead by  29 fr
+    t= 1001 us  DL11   79 fr  UL9   49 fr  ahead by  30 fr
+running — data handled every 5 ms from the timer interrupt
+  slot->channel map (frame lag -11):
+    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+   16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+[   1s] played 55680 fr  verified 50880 fr  ticks 213  lag -11  isr max 3088 us
+[   2s] played 104160 fr  verified 99360 fr  ticks 415  lag -11  isr max 3089 us
+[   3s] played 152640 fr  verified 147840 fr  ticks 617  lag -11  isr max 3090 us
+[   4s] played 201120 fr  verified 196320 fr  ticks 819  lag -11  isr max 3090 us
+[   5s] played 249600 fr  verified 244800 fr  ticks 1021  lag -11  isr max 3090 us
+[   6s] played 298080 fr  verified 293280 fr  ticks 1223  lag -11  isr max 3090 us
+[   7s] played 346560 fr  verified 341760 fr  ticks 1425  lag -11  isr max 3090 us
+[   8s] played 395040 fr  verified 390240 fr  ticks 1627  lag -11  isr max 3090 us
+[   9s] played 443520 fr  verified 438720 fr  ticks 1829  lag -11  isr max 3090 us
+[  10s] played 492000 fr  verified 487200 fr  ticks 2031  lag -11  isr max 3090 us
+[  11s] played 540480 fr  verified 535680 fr  ticks 2232  lag -11  isr max 3091 us
+[  12s] played 588960 fr  verified 584160 fr  ticks 2434  lag -11  isr max 3091 us
+[  13s] played 637440 fr  verified 632640 fr  ticks 2636  lag -11  isr max 3091 us
+[  14s] played 685920 fr  verified 681120 fr  ticks 2838  lag -11  isr max 3091 us
+[  15s] played 734400 fr  verified 729600 fr  ticks 3040  lag -11  isr max 3091 us
+[  16s] played 782880 fr  verified 778080 fr  ticks 3242  lag -11  isr max 3091 us
+[  17s] played 831360 fr  verified 826560 fr  ticks 3444  lag -11  isr max 3091 us
+[  18s] played 879840 fr  verified 875040 fr  ticks 3646  lag -11  isr max 3091 us
+[  19s] played 928320 fr  verified 923520 fr  ticks 3848  lag -11  isr max 3091 us
+

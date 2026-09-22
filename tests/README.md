@@ -40,6 +40,8 @@ host/reconf_host.py       samples the console at each baud
 host/uartapi_host.py      drives the keyboard-harness ztest suites
 board/setup-g700.sh       board-side cell bring-up
 board/setup-g510.sh       likewise
+board/setup-afe.sh        bring-up under the cell that grants the Audio Front End
+board/cells/              cell configs that are not in the stock rootfs
 tools/verify-jailhouse-cells.py   inspect cell binaries (not wired into the run)
 tools/bisect-build.sh     build every commit in a range (not wired into the run)
 tools/run-firmware.sh     flash and run one image by hand, with a safe logger
@@ -369,6 +371,34 @@ exact counts with no bounce; a button gives neither. The test asserts four risin
 and four falling, separately.
 
 Both parts pass 19/19: MT8390 on the Genio 700 and MT8370 on the Genio 510.
+
+## Running under the Audio Front End cell
+
+The AFE samples are not part of a tier: they need the cell that grants the AFE,
+and the loopbacks need wiring. Run one by hand:
+
+```bash
+SETUP=setup-afe.sh tools/run-firmware.sh <image.bin> 'PASS --' afe-c8
+```
+
+`board/setup-afe.sh` brings the inmate up under
+`genio-700-evk-zephyr-afe.cell`, preferring the copy staged in `board/cells/`
+over `/usr/share/jailhouse/cells`, because that cell is not part of the stock
+rootfs and a reflash takes it. The 700-authored cell is used on the 510 as well:
+same die family, AFE at the same addresses, identical inmate window and console.
+Only the root cell comes from the board.
+
+Three things about this that are not guessable:
+
+- **The `audio` power domain is off on a stock boot**, and neither the cell nor
+  the driver can raise it. `setup-afe.sh` writes `on` to the AFE device's
+  `power/control` first. Without it every register write is dropped while every
+  driver call returns 0.
+- **Tear the cell down before touching Linux's `mt8188-audio` driver.** While a
+  cell holds the AFE its registers are unmapped from the root cell, so a bind or
+  a runtime resume faults the root cell and resets the board.
+- **A run that stops all its streams wedges the next one.** Reboot between such
+  runs until that is fixed; the loopbacks are unaffected because they never stop.
 
 ## Interpreting a run
 

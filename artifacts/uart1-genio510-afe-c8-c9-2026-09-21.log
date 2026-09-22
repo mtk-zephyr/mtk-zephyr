@@ -1,0 +1,82 @@
+# C8 two-stream teardown and C9 argument rejection, Genio 510 EVK, 2026-09-21/22
+#
+# The middle transcript is a NEGATIVE CONTROL: the driver was temporarily
+# changed to release the timing domain twice in stop(), which is the pre-fix
+# behaviour.  It is here to show the test can fail, not as a defect report.
+
+=============== C8 mt8188_twostream_dl11_dl8 -- driver as committed
+--- logger attached to /dev/ttyUSB0 ---
+*** Booting Zephyr OS build v4.4.0-14938-g5e9777b92835 ***
+MT8188 two-stream teardown: DL11 and DL8, 16 ch, 48000 Hz, 32-bit, DSP-B
+  DL11 buffer 0x6104b000 -> eTDM_OUT1, DL8 buffer 0x61000000 -> eTDM_OUT2
+  both at one rate, so both draw on the same audio PLL timing domain
+
+  1. both started
+    DL11                   ok     2400 frames in 50 ms, wanted ~2400
+    DL8                    ok     2402 frames in 50 ms, wanted ~2400
+
+  2. DL8 stopped -- DL11 must be untouched
+    DL11 survivor          ok     2402 frames in 50 ms, wanted ~2400
+    DL8 stopped            ok        0 frames in 50 ms, wanted 0
+
+  3. DL8 restarted -- the domain must come back for it
+    DL11                   ok     2402 frames in 50 ms, wanted ~2400
+    DL8                    ok     2402 frames in 50 ms, wanted ~2400
+
+  4. DL11 stopped -- the other order
+    DL8 survivor           ok     2403 frames in 50 ms, wanted ~2400
+    DL11 stopped           ok        0 frames in 50 ms, wanted 0
+
+PASS -- the timing domain is reference counted
+
+=============== C8 NEGATIVE CONTROL -- domain released twice in stop()
+--- logger attached to /dev/ttyUSB0 ---
+*** Booting Zephyr OS build v4.4.0-14936-g450c2f15f8ed ***
+MT8188 two-stream teardown: DL11 and DL8, 16 ch, 48000 Hz, 32-bit, DSP-B
+  DL11 buffer 0x6104b000 -> eTDM_OUT1, DL8 buffer 0x61000000 -> eTDM_OUT2
+  both at one rate, so both draw on the same audio PLL timing domain
+
+  1. both started
+    DL11                   ok     2404 frames in 50 ms, wanted ~2400
+    DL8                    ok     2402 frames in 50 ms, wanted ~2400
+
+  2. DL8 stopped -- DL11 must be untouched
+    DL11 survivor          FAIL      0 frames in 50 ms, wanted ~2400
+    DL8 stopped            ok        0 frames in 50 ms, wanted 0
+
+  3. DL8 restarted -- the domain must come back for it
+    DL11                   ok     2403 frames in 50 ms, wanted ~2400
+    DL8                    ok     2402 frames in 50 ms, wanted ~2400
+
+  4. DL11 stopped -- the other order
+    DL8 survivor           FAIL      0 frames in 50 ms, wanted ~2400
+    DL11 stopped           ok        0 frames in 50 ms, wanted 0
+
+FAIL -- see the phases above
+
+=============== C9 mt8188_api_reject
+--- logger attached to /dev/ttyUSB0 ---
+*** Booting Zephyr OS build v4.4.0-14938-g5e9777b92835 ***
+MT8188 AFE argument rejection test
+  buffer 0x61000000, 30720 bytes
+
+  configure()
+    valid, as a control                ok    got 0        wanted 0
+    memory interface out of range      ok    got -EINVAL  wanted -EINVAL
+    memory interface not driven        ok    got -ENOTSUP wanted -ENOTSUP
+    null configuration                 ok    got -EINVAL  wanted -EINVAL
+    zero channels                      ok    got -EINVAL  wanted -EINVAL
+    more channels than a port pair     ok    got -EINVAL  wanted -EINVAL
+    word size the block cannot carry   ok    got -EINVAL  wanted -EINVAL
+    rate with no timing value          ok    got -EINVAL  wanted -EINVAL
+
+  set_buf()
+    valid, as a control                ok    got 0        wanted 0
+    memory interface out of range      ok    got -EINVAL  wanted -EINVAL
+    memory interface not driven        ok    got -ENOTSUP wanted -ENOTSUP
+    zero size                          ok    got -EINVAL  wanted -EINVAL
+    size not a whole number of slots   ok    got -EINVAL  wanted -EINVAL
+    base address unaligned             ok    got -EINVAL  wanted -EINVAL
+    base plus size past 32 bits        ok    got -EINVAL  wanted -EINVAL
+
+PASS -- 15 of 15 checks

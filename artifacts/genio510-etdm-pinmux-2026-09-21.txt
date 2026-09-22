@@ -1,0 +1,27 @@
+# eTDM pin mux, Genio 510 EVK, after the Linux devicetree change of 2026-09-21.
+# Read from /sys/kernel/debug/pinctrl/10005000.pinctrl-pinctrl_paris/pins while
+# the Zephyr inmate was running; the first digit after the colon is the mode.
+#
+# Why this is read from Linux and not inferred from a clean boot: the Jailhouse
+# pin controller mediator discards a write to an ungranted pin and returns
+# MMIO_HANDLED, so pinctrl_apply_state() reports success either way.  Before the
+# devicetree change, all eight mode-3 pins read 0 or 1 and every loopback failed
+# with no error from the driver.
+
+pin  signal        want  got
+4    I2SO1_MCK     3     3    ok
+5    I2SO1_BCK     3     3    ok
+6    I2SO1_WS      3     3    ok
+11   I2SO1_D0      3     3    ok
+107  I2SIN_MCK     1     1    ok
+108  I2SIN_BCK     1     1    ok
+109  I2SIN_WS      1     1    ok
+110  I2SIN_D0      1     1    ok
+114  I2SO2_MCK     1     1    ok
+115  I2SO2_BCK     1     1    ok
+116  I2SO2_WS      1     1    ok
+117  I2SO2_D0      1     1    ok
+125  TDMIN_MCK     3     3    ok
+126  TDMIN_BCK     3     3    ok
+127  TDMIN_LRCK    3     3    ok
+128  TDMIN_DI      3     3    ok

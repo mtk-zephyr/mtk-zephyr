@@ -6,6 +6,9 @@ TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZEPHYR_BASE="${ZEPHYR_BASE:-$HOME/zephyrproject/zephyr}"
 VENV="${VENV:-$HOME/zephyrproject/.venv}"
 BOARD_DIR="${BOARD_DIR:-/root/claude_aary}"
+# Where the board-side setup scripts are kept here, as opposed to $BOARD_DIR
+# which is where they are pushed to.
+BOARD_DIR_LOCAL="$TESTS_DIR/board"
 # The stock cells in /usr/share/jailhouse/cells now grant the inmate the full
 # 8 MB the board devicetree declares, so the board script's own default is
 # correct and this is left unset. It used to point at a patched copy under
@@ -79,7 +82,25 @@ detect_board() {
 	*)
 		return 1 ;;
 	esac
+	push_setup || return 1
 	return 0
+}
+
+# The board-side setup scripts live in this repository, not on the board.  A
+# reflash wipes $BOARD_DIR, and because run_cell() sends its output to
+# /dev/null a missing script looks exactly like a board that did not boot.
+# Push them every time rather than assume they survived.
+push_setup() {
+	local s
+	for s in "setup-$BOARD_TAG.sh" setup-afe.sh; do
+		[ -f "$BOARD_DIR_LOCAL/$s" ] || continue
+		adb push "$BOARD_DIR_LOCAL/$s" "$BOARD_DIR/$s" >/dev/null 2>&1 || return 1
+		adb shell "chmod +x $BOARD_DIR/$s" >/dev/null 2>&1
+	done
+	if [ -d "$BOARD_DIR_LOCAL/cells" ]; then
+		adb push "$BOARD_DIR_LOCAL/cells" "$BOARD_DIR/cells" >/dev/null 2>&1 || return 1
+	fi
+	adb shell "test -x $BOARD_SETUP" >/dev/null 2>&1
 }
 
 # --- serial port ----------------------------------------------------------
