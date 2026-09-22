@@ -58,6 +58,18 @@ slot map. The 700-authored AFE cell is used unchanged on the 510 — same die
 family, same AFE addresses, identical inmate window and console. Detail in
 `to-authoring/2026-09-22-prc-afe-validated-on-hardware.md`.
 
+**Both EVKs are supported**, not just the 700. `-S mtk-afe` previously matched
+the 700 alone, and `etdm_default` lived in the 700's board file, so the 510
+could not build at all — west accepted the snippet, applied nothing, and failed
+later at compile. The eTDM pin control state now lives in
+`boards/mediatek/common/genio-evk-pinctrl-common.dtsi` and both boards include
+it; the two EVKs route the audio serial pins identically, so one copy describes
+both. The include sits **after** each board's own states, because node order
+decides `DT_FOREACH_CHILD` order and the child indices — with it last, the 700's
+generated devicetree is identical before and after. All ten samples build for
+the 510, and a 510-built loopback runs on 510 hardware.
+`to-authoring/2026-09-22-afe-now-builds-for-both-evks.md`.
+
 ### Two platform requirements the driver cannot meet on its own
 
 Both fail **silently** — every driver call returns 0 — so neither is discoverable
@@ -291,7 +303,7 @@ Board images were still refreshed to the new shape so future reports quote a sub
 | 5 | Both board defconfigs set `CONFIG_DCACHE_LINE_SIZE_DETECT` / `CONFIG_ICACHE_LINE_SIZE_DETECT`, which arm64 does not support — dead lines warning on every build. | **FIXED**, folded into commits 14 and 15. Verified a no-op: 0 `.config` lines differ, line size still 64, warnings 2→0 |
 | 7 | **The 8 MB inmate window is real on BOTH boards.** New cells verified before transfer and installed; H8 passes with a 6 MB `.bss` array spanning `0x27a80..0x627a7c`, three times past the old 2 MB ceiling. Full suite 13/13 on each board. | **resolved** |
 | 8 | **Four rpmsg cell configs were NOT updated**: `genio-{700,510}-evk-zephyr_rpmsg_{native,openamp}.cell` still grant 2 MB while the boards declare 8 MB. Running Zephyr under an rpmsg cell reacquires the latent fault. The plain and AFE cells are correct. | open, MediaTek-side |
-| 9 | **The AFE cannot re-initialise after a full teardown.** The inmate following one that stopped all its streams hangs during AFE init; destroying the wedged cell resets the board. Reproducible six for six, cleared only by a reboot. | open, PR C |
+| 9 | **The AFE cannot re-initialise after a full teardown.** The inmate following one that stopped all its streams hangs during AFE init; destroying the wedged cell resets the board. Reproducible six for six, cleared only by a reboot. Narrowed: it only affects runs that **start** a stream — `mt8188_api_reject` runs fine straight after a teardown — so the fault is in bring-up, not init. | open, PR C |
 | 10 | **The AFE snippet's `pinctrl-0` does nothing under the cell.** The pin controller is granted by no cell, and the Jailhouse mediator discards ungranted writes while returning success. The eTDM pins must be muxed by the board's Linux devicetree instead. | open, needs a decision |
 | 11 | **The installed AFE cell is not the one in the authoring checkout**: it grants one extra region, `0x10001400` (3 KB inside `infracfg_ao`, ROOTSHARED). Board copy md5 `1417a3b2`, checkout `3ee805c1`. A copy is staged at `tests/board/cells/` so a reflash cannot lose it. | resolved; trust the board |
 | 6 | `jailhouse enable` **is required from cold on both boards** — answers doc `TODO(6)`. Also: `jailhouse cell list` exits 0 when jailhouse is disabled, so an exit-code guard silently skips the enable and fails later as `JAILHOUSE_CELL_CREATE: Invalid argument`. | resolved; both setup scripts fixed |
