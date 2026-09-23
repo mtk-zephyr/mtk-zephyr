@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-22 (PR C validated on hardware; work branches on PR A review round 2)
+# STATUS — as of 2026-09-23 (PR C merged down to mtk-genio-dev; work branches on PR A review round 2)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -47,9 +47,20 @@ deliberately untouched.
 
 ## PR C — the Audio Front End works on hardware
 
-Nine commits on `mtk-genio-dev-afe`, a temporary branch off `mtk-genio-dev`. It
-is deleted once the feature settles and the work merges down; until then treat it
-the way `mtk-genio-dev` is treated — **it is force-pushed, so hard reset.**
+**The work is on `mtk-genio-dev`**, tip `fa073d3bc4f`, 28 commits.
+`mtk-genio-dev-afe` served its purpose and is **deleted**, on origin and locally.
+
+The merge was a **fast-forward**: nothing already on `mtk-genio-dev` was
+rewritten, so consumers can pull rather than hard reset. That is the exception
+rather than that branch's rule, and it holds only because no resync happened in
+between.
+
+Six commits landed, not nine. The ten audio samples moved to `mtk-zephyr/samples`
+and their three commits were dropped first. Each was **purely** `samples/audio/`
+— 3, 3 and 24 files, all of them — so nothing had to be split; five of the six
+survivors kept their shas outright and the sixth was a verbatim re-parent, diff
+and message identical. The image built from the tree is **byte-identical** before
+and after the drop, so every hardware result at the old tip carries over.
 
 **All three eTDM loopbacks pass on the Genio 510**, frame by frame, 19 seconds
 each, with no mismatches: `dl11_ul8` and `dl8_ul3` at 16 channels and
@@ -136,8 +147,7 @@ clean series.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `a3a352da5ce` | **22 commits**: 16 PR A *review round 2* + 6 PR B. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 39/39 per-commit, **11/11 hardware on both boards** |
-| `mtk-genio-dev-afe` | `c75fde60f20` | **9 commits** on `mtk-genio-dev`: PR C (AFE, clocks, snippet, samples) plus two samples written here. Temporary; force-pushed | C1-C10, three loopbacks frame-verified, suite 9/9 |
+| `mtk-genio-dev` | `fa073d3bc4f` | **28 commits**: 16 PR A *review round 2* + 6 PR B + 6 for the Audio Front End. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 12/12 per-commit on the AFE six, **9/9 hardware on the 510 at the tip** |
 | `mtk-v4.4.2` | `05ef8eea7ec` | **22 commits** on `v4.4.2`: round-2 PR A + PR B, level with dev. Rebuilt cleanly — no customer is on it yet | gates 9/9, ADSP byte-identical, 39/39 per-commit, **700 11/11** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):

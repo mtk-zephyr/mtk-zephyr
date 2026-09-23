@@ -17,8 +17,9 @@ sources and expected output.
 ./run-tests.sh --list       # what would run
 ```
 
-Set `ZT_AGENT` (`dev-agent` / `pr-agent`) so a run is attributable: the suite is
-shared between two agents and results are written per run, not per file.
+Set `ZT_AGENT` (`dev-agent` / `pr-agent` / `samples-agent`) so a run is
+attributable: the suite is shared between three agents and results are written
+per run, not per file.
 
 Exit status is 0 only if nothing failed, so it can gate a commit.
 

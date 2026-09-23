@@ -32,8 +32,9 @@ BUILD_ROOT="${BUILD_ROOT:-$ZEPHYR_BASE/build/tests}"
 # logs that would have settled it had been overwritten.
 #
 # `logs/latest` points at the newest run so anything reading a fixed path still
-# works.  Set ZT_AGENT in your environment ("dev-agent" / "pr-agent"); runs that
-# do not are recorded as "unknown", which is still separated by time and branch.
+# works.  Set ZT_AGENT in your environment ("dev-agent" / "pr-agent" /
+# "samples-agent"); runs that do not are recorded as "unknown", which is still
+# separated by time and branch.
 ZT_AGENT="${ZT_AGENT:-unknown}"
 RUN_BRANCH="$(git -C "$ZEPHYR_BASE" rev-parse --abbrev-ref HEAD 2>/dev/null || echo detached)"
 RUN_BRANCH="${RUN_BRANCH//\//-}"
