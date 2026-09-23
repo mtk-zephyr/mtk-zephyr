@@ -1,4 +1,4 @@
-# STATUS — as of 2026-09-23 (PR C merged down to mtk-genio-dev; work branches on PR A review round 2)
+# STATUS — as of 2026-09-23 (AFE route() hang fixed; PR C on mtk-genio-dev)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
@@ -107,13 +107,32 @@ change every loopback failed with no error anywhere.
 This one needs a decision, not a note: the series ships a pin control state that
 does nothing in the configuration it is built for.
 
-### One open defect
+### The re-initialisation hang: fixed, and it was route()
 
-**The AFE cannot re-initialise after a full teardown.** Reproducible six for six:
-the inmate that runs after one which stopped all its streams hangs during AFE
-init, and destroying that wedged cell takes the root cell down with it. A reboot
-is the only recovery. The loopbacks never hit it because they never stop. Stop
-audio, restart the inmate, and it wedges.
+**Fixed** at `6cec5371c56`. It was never about initialisation.
+
+`mt8188_afe_set_route()` writes the AFE_CONN interconnect matrix, which sits in
+the a1sys timing domain. `route()` runs before `start()`, so nothing holds that
+domain up, and reaching those registers with it down stalls the bus and never
+returns — no error, no timeout. It worked only while something else kept the
+domain alive: Linux on a fresh boot, or an earlier stream. The first `stop()`
+that released it — the reference count reaching zero, working as designed — made
+every later `route()` hang until reboot.
+
+So it was an **ordering dependency in the public API**, invisible while the
+clock happened to be on. `route()` now takes the domain around its writes and
+releases it after; the count makes that safe against a running stream.
+
+Four narrower fixes were tried on hardware and all hung: the topckgen
+`CLK_TOP_A1SYS_HP` gate at init, the audsys a1sys gate plus `A1SYS_TIMING_ON` at
+init, forcing the mux back to clk26m with its gate on, and the APLL1 PLL alone.
+Reverting the mux to clk26m is **not** enough to reach those registers even
+though clk26m is live — worth remembering before anyone tries it again.
+
+Detail in `to-authoring/2026-09-23-route-hangs-without-the-a1sys-domain.md`,
+including the measurement trap: a hang wedges the inmate, destroying it resets
+the board, so the run after a hang is testing a freshly booted board — a broken
+candidate looks fixed unless uptime is checked.
 
 ## Branch policy — read this before resyncing
 
@@ -147,7 +166,7 @@ clean series.
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
 | `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `fa073d3bc4f` | **28 commits**: 16 PR A *review round 2* + 6 PR B + 6 for the Audio Front End. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 12/12 per-commit on the AFE six, **9/9 hardware on the 510 at the tip** |
+| `mtk-genio-dev` | `6cec5371c56` | **29 commits**: 16 PR A *review round 2* + 6 PR B + 6 for the Audio Front End. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 12/12 per-commit on the AFE six, **9/9 hardware on the 510 at the tip** |
 | `mtk-v4.4.2` | `05ef8eea7ec` | **22 commits** on `v4.4.2`: round-2 PR A + PR B, level with dev. Rebuilt cleanly — no customer is on it yet | gates 9/9, ADSP byte-identical, 39/39 per-commit, **700 11/11** |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
