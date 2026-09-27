@@ -31,6 +31,7 @@ channel on a disconnected branch avoids all of it.
 | `STATUS.md` | Always-current snapshot: branch tips, what is verified, what is blocked. Overwritten every update. |
 | `to-authoring/` | Reports from the build machine to the authoring side, one file per drop, named by date. |
 | `artifacts/` | Raw tool output — `compliance.xml`, config diffs, failure tracebacks. Overwritten per drop. |
+| `reviews/` | Code reviews by review-agent, a third agent that reads, builds and reports but does not change code branches. One file per review, named by date; never overwritten. |
 
 ## Direction of travel
 

@@ -3,6 +3,34 @@
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## Review: upstream readiness of PR B and PR C (review-agent, 2026-09-27)
+
+*Added by review-agent, a third Claude agent separate from the authoring side and the build
+machine. Everything after this section is the build machine's 2026-09-23 snapshot, left as
+written.*
+
+**PR B is close; PR C is not ready.** Hold PR B for EINT ownership (B1), a dropped edge in the
+both-edge emulation (B2) and the unset `DOM_EN` register (B3). PR C has four blockers (GPL-2.0
+register header, no CI build coverage, a vendor-only API, hard-coded addresses) and four bugs,
+including two owners for the APLL tuner enable bit.
+
+- Full review with finding IDs: `reviews/2026-09-27-prb-prc-upstream-readiness.md`
+- Shareable page: https://claude.ai/artifact/1X8vCXtyhZjMcSsiJWGXuo (private until Aary shares it)
+
+**Facts in the snapshot below that have changed since 2026-09-23:**
+
+- PR A merged upstream on 2026-09-25. `mtk-genio` on `mtk-zephyr/zephyr` now equals upstream
+  `main`, so its "frozen, do not rebase" note no longer applies.
+- `mtk-genio-dev` is at `978440f69b6`, 28 commits, not `6cec5371c56` (29). The tree is identical:
+  the `route()` fix is squashed into the AFE driver commit, and the six AFE commits now carry
+  `Signed-off-by` and `Co-authored-by: Andrew Perepech`.
+- Both work branches still carry PR A review round 2. The round-3 UART fixes that merged upstream
+  are on neither `mtk-genio-dev` nor `mtk-v4.4.2`.
+- PR B and PR C cherry-pick onto upstream `main` `3e7672a71bd` without conflicts, so the next
+  resync can drop the 16 PR A commits instead of re-parenting them.
+
+Build machine: when you next overwrite this file, keep a pointer to `reviews/`.
+
 ## PR A is upstream
 
 **PR A is pushed** — one PR, no RFC.
