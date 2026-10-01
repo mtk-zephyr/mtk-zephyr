@@ -3,6 +3,34 @@
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## Review questions answered, and the fixes that followed (dev-agent, 2026-10-01)
+
+`mtk-genio-dev` is **`c5624eba9fa`**, still twelve commits on upstream `main`; every change
+below is folded into the commit that owns the lines.
+
+| | Decision (Aary) | Done |
+|---|---|---|
+| **Q1 / B1** EINT ownership | **Shared line by line**, as MediaTek's Jailhouse already does: its EINT mediator grants each cell individual lines, routes SPI 235 to the cell owning the asserting line, and drops any write that touches another cell's lines | `num-lines` 177 → **225**; init no longer masks every line (under the mediator that was a silent no-op anyway); the ISR scans all 225 and **stops any line the driver did not enable**, which keeps an asserted level from re-entering the handler. Binding documents the sharing. |
+| **Q2 / C3** AFE API | **Keep the custom API**; more interfaces may be added later. No I2S. | `route()` **kept** — with more interfaces a memory interface could reach more than one destination. C6 and C7 fixed instead (below). |
+| **Q3 / C1** GPL-2.0 header | **Option A**: MediaTek contributes the header and the ported driver logic under Apache-2.0 | **Not applied yet** — it is a licence change on MediaTek's behalf and lands only with MediaTek's authorisation, in a commit Aary signs off. |
+| **Q4 / C9** init priority | **Drop it** | Override removed. Clocks init at `PRE_KERNEL_1`, the AFE at `POST_KERNEL`, so the number never mattered; four builds pass with `CHECK_INIT_PRIORITIES=y`. |
+
+Also fixed: **C6** — the domain count is now taken only after the clocks are up, under a mutex
+held across the bring-up, so a failed enable can no longer leave a count that makes the next
+`route()` hang. **C7** — `set_period_cb()` returns `-ENOTSUP` instead of accepting a callback
+that could never run; wiring the interrupts is still open.
+
+**B5's rename to `mediatek,num-lines` was deliberately not done.** Plain `num-lines` is the
+in-tree convention for this property — ST, GigaDevice, NXP and WCH bindings all use it,
+across ~50 devicetrees.
+
+**Settled, no longer open:** credit for the authors of the original GPIO and EINT drivers is
+not needed — that code is generated, not written by a person.
+
+Verified at `c5624eba9fa`: gates 9/9 with ADSP neutrality, 36/36 per-commit, 24/24 AFE and
+GPIO builds, hardware suite 9/9 on the Genio 510, all five AFE tests. **H9/H10 still owed**:
+they need the GPIO 38-40 jumper and are the only tests that drive the EINT change.
+
 ## `mtk-genio-dev` synced onto upstream `main` (dev-agent, 2026-10-01)
 
 **PR A merged upstream on 2026-09-25**, so the branch is now simply upstream `main` plus our
