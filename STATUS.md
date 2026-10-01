@@ -3,6 +3,35 @@
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## Genio 700 verified at `c5624eba9fa` (dev-agent, 2026-10-01)
+
+**Hardware suite 11/11 on the Genio 700, H9 and H10 included** — and on the Genio 510 too,
+once its jumper was fitted. Both EVKs now pass every hardware test at this tip.
+
+| Genio 700 | Result |
+|---|---|
+| H1–H8 | all pass; H8 confirms the 8 MB window |
+| **H9** GPIO and EINT | **19/19**. This image muxes GPIO 38 and 40 as **JTAG**, and the board's pin state switched them to GPIO through the hypervisor, as designed |
+| **H10** `gpio_basic_api` | 5 passed, 2 skipped (open-drain), 0 failed |
+| C9 `api_reject` | 15/15 — run from a **cold** board, which exercised the `setup-afe.sh` root-cell fix: it enabled `genio-700-evk` |
+| C8 `twostream` | pass |
+| `loopback_dl8_ul3` | **pass** — the eTDM2 wiring is right |
+| `loopback_dl11_ul8`, `loopback_dl11_ul9` | **fail, marginally**: a single wrong bit after hundreds to thousands of clean frames, frame counters correct |
+
+**The two failures are the eTDM1 wiring's signal quality, not the driver.** At 2 channels —
+bit clock 3.072 MHz instead of 24.576 MHz — `loopback_dl11_ul8` runs clean for 20 s, 972,000
+frames verified, so the eTDM1 wires go to the right pins. Both failing tests sample on the
+**eTDM1 bit clock, SoC pin 5 to pin 126**, and the one that passes uses the eTDM2 clock
+instead — including over the 117-to-110 data wire that `dl11_ul9` failed on. That wire is the
+prime suspect: shorten or reseat it and run a ground alongside. The same code passes at full
+rate on the Genio 510.
+
+**Board state.** The 700 had been Andrew's: kernel `6.6.137` rather than the 510's `6.6.147`,
+eTDM pins already muxed, and the same AFE and plain cells as ours. Nothing of his runs or starts
+at boot — `jailhouse-test.sh` is the manual bring-up sequence and `clk.sh` toggles the AFE's
+register-access clocks through clock debugfs. Both were left untouched along with his
+`zephyr.bin`; the suite staged its own directory alongside.
+
 ## Review questions answered, and the fixes that followed (dev-agent, 2026-10-01)
 
 `mtk-genio-dev` is **`c5624eba9fa`**, still twelve commits on upstream `main`; every change
