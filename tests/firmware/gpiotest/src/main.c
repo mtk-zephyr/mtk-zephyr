@@ -11,8 +11,8 @@
  * drives, pin 8 observes, so every edge is produced by software: no bounce, and
  * the event count is exact. A physical button cannot give either.
  *
- * The board devicetree reserves every pin in the bank except 6 and 8, so the
- * two are also the only ones a write may reach.
+ * The board overlay enables the bank and reserves every pin in it except 6 and
+ * 8, so the two are also the only ones a write may reach.
  */
 
 #include <zephyr/kernel.h>

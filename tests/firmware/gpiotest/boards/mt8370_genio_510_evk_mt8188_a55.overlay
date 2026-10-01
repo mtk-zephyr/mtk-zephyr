@@ -1,0 +1,31 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * GPIO 38 and GPIO 40 are pins 6 and 8 of bank 1, and the only pins of that
+ * bank the stock Zephyr cell grants.  The board leaves every bank disabled, so
+ * this enables bank 1, switches the two pins to their GPIO function (every other
+ * function of theirs is a JTAG signal) and reserves the rest of the bank, which
+ * is what check B6 relies on.
+ */
+
+#include <zephyr/dt-bindings/pinctrl/mt8188-pinctrl.h>
+
+&pinctrl {
+	gpio32_63_default: gpio32_63_default {
+		group1 {
+			pinmux = <PINMUX_PIN_38__FUNC_B_GPIO38>,
+				 <PINMUX_PIN_40__FUNC_B_GPIO40>;
+		};
+	};
+};
+
+&gpio32_63 {
+	pinctrl-0 = <&gpio32_63_default>;
+	pinctrl-names = "default";
+	gpio-reserved-ranges = <0 6>, <7 1>, <9 23>;
+	status = "okay";
+};

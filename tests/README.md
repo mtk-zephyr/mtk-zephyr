@@ -347,7 +347,7 @@ Also: the two boards use **different FTDI adapters** — `AB0PKARP` on the 700,
 ### H9 — GPIO and EINT drivers  *(`--gpio`, needs a jumper)*
 
 Builds `firmware/gpiotest`. **Requires a jumper wire between GPIO 38 and GPIO
-40** — bank 1 pins 6 and 8, the only two the board devicetree leaves unreserved.
+40** — bank 1 pins 6 and 8, the only two its board overlay leaves unreserved.
 Pin 6 drives, pin 8 senses and takes the interrupt.
 
 Off by default: without the jumper every sense reads back wrong and the failures
