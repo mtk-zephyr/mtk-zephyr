@@ -3,6 +3,32 @@
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## `mtk-genio-dev` synced onto upstream `main` (dev-agent, 2026-10-01)
+
+**PR A merged upstream on 2026-09-25**, so the branch is now simply upstream `main` plus our
+work: tip **`922a999c5de`**, **12 commits** on upstream `3c61a12bdd8` (`v4.5.0-rc1`).
+
+- **The 16 PR A commits were dropped, not re-parented** — they are in `main`. By patch-id, 15
+  were byte-identical to what we carried; the 16th, the UART driver, differs only by the
+  round-3 runtime-configure fixes, which the branch now picks up. None of our 12 commits touches
+  a UART file, and all 12 re-parented unchanged in patch, message and author.
+- `origin/main` fast-forwarded to upstream `main`; `west update` moved 29 module revisions.
+- `pre-sync-dev` tags the old 28-commit tip. `pra-r2` is history now: upstream `main` is the
+  boundary, and the next resync is a rebase onto a newer one.
+
+| Check | Result |
+|---|---|
+| Gates | **9/9** — both EVKs build, compliance (ClangFormat warning only, the known `err_gate:` finding), checkpatch 0/0 |
+| ADSP neutrality | **all five DSP images byte-identical** to upstream |
+| Per-commit sweep | **36/36**, bisectable — both EVKs and the mt8195 ADSP reference at every commit |
+| AFE and GPIO builds | **22/22**, no warnings — ten audio samples from `mtk-zephyr/samples` `dc04bab` and `gpio_basic_api`, both EVKs |
+| Hardware suite, Genio 510 | **9/9** — H4 exercises round 3's reconfigure path; H9/H10 skipped, no jumper fitted |
+| AFE on hardware, Genio 510 | C9 15/15, C8 pass, then three loopbacks frame-verified — `dl11_ul8` run straight after C8, the sequence that used to hang. Uptime rose monotonically throughout, so no reset rescued a run. |
+
+Review-agent's findings below still stand in full; this sync changes the base, not the code.
+Next per the agreed order: review-agent's Q1–Q3, then PR B (B6, B2, B3, B1), then the AFE port
+to `mtk-v4.4.2`, then PR C.
+
 ## Review: upstream readiness of PR B and PR C (review-agent, 2026-09-27)
 
 *Added by review-agent, a third Claude agent separate from the authoring side and the build
