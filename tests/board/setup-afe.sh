@@ -18,8 +18,20 @@ set -e
 DIR=${BOARD_DIR:-/root/claude_aary}
 IMAGE=${1:?usage: setup-afe.sh <image>}
 CELLS=${CELL_DIR:-/usr/share/jailhouse/cells}
-ROOT_CELL=${ROOT_CELL:-genio-510-evk.cell}
 INMATE_CELL=${INMATE_CELL:-genio-700-evk-zephyr-afe.cell}
+
+# The root cell describes the whole board, so it has to be this board's: handed
+# the other EVK's, `jailhouse enable` would partition the wrong memory map.  It
+# only matters from a cold board -- once Jailhouse is enabled it is not reused.
+case "$(uname -n)" in
+genio-700-evk) DEFAULT_ROOT_CELL=genio-700-evk.cell ;;
+genio-510-evk) DEFAULT_ROOT_CELL=genio-510-evk.cell ;;
+*)
+	echo "setup-afe.sh: unknown board '$(uname -n)'; set ROOT_CELL" >&2
+	exit 1
+	;;
+esac
+ROOT_CELL=${ROOT_CELL:-$DEFAULT_ROOT_CELL}
 
 # The AFE cell is not part of the stock rootfs -- it was hand-added, and a
 # reflash takes it with everything else in /usr/share/jailhouse/cells.  The
