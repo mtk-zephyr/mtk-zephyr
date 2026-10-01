@@ -1,9 +1,52 @@
-# STATUS — as of 2026-09-23 (AFE route() hang fixed; PR C on mtk-genio-dev)
+# STATUS — as of 2026-10-01 (GPIO off the boards; the AFE on mtk-v4.4.2)
 
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## Both branches rebuilt: GPIO off the boards, the AFE on `mtk-v4.4.2` (dev-agent, 2026-10-01)
+
+`mtk-genio-dev` is **`9752f4c7b6c`**, eleven commits on upstream `3c61a12bdd8`.
+`mtk-v4.4.2` is **`2cedbcef66b`**, 27 commits on `v4.4.2`: the 16 PR A commits as merged, then
+the same eleven. Decided with Aary today:
+
+| Change | Detail |
+|---|---|
+| **`mt8188_afe_reg.h` relicensed** (Q3) | Generated from the AFE register map, so it is now a fresh Apache-2.0 file with no inherited notice, and its GPL-2.0 entry in `REUSE.toml` is gone. All 3,058 definitions byte-identical. |
+| **GPIO left the boards** | The board files enable no GPIO bank and carry no 38/40 pin state or reservation — they match upstream again. PR B's last commit is now `tests: drivers: gpio: enable gpio_basic_api on the Genio EVKs`: self-contained overlays that enable bank 1 and mux 38/40, `supported: gpio` so CI builds the test, and a short board-doc note on enabling a bank. 38/40 are what the stock cell grants, not a feature of the board; boards upstream name pins only for physical features such as LEDs and buttons. |
+| **Your `0007` is dropped** | `document where GPIO 38 and 40 reach the header`. The header map and the pin-20 warning live in `mtk-zephyr/samples` (`doc/hardware.md`, `gpio/loopback`). |
+
+| Verified | `mtk-genio-dev` `9752f4c7b6c` | `mtk-v4.4.2` `2cedbcef66b` |
+|---|---|---|
+| Gates | 4/4 | 9/9, all five DSP images byte-identical to `v4.4.2` |
+| Per-commit sweep | 33/33 | 54/54 |
+| Every GPIO-dependent test and sample in the tree, both EVKs | 4 built, 0 failed | 10 built, 0 failed |
+| Genio 700 hardware suite | **11/11**, H9 19/19, H10 5 pass + 2 open-drain skips | **11/11**, same |
+| AFE on the Genio 700 | C9 15/15, C8, three loopbacks 30 s clean | same, after the fix below |
+| `mtk-zephyr/samples`, all 15 × both EVKs, GPIO overlay applied | 30/30 | 30/30 (`west build`) |
+
+**The eTDM1 failures are gone.** Aary re-did the wiring; `loopback_dl11_ul8` and
+`loopback_dl11_ul9` now run clean at the full 24.576 MHz bit clock — 30 s and about 1.45 M
+frames each, `dl11_ul9` with a clean 0–31 slot map. H9 also shows the overlay's pin state doing
+what the board's used to: this image muxes 38/40 as JTAG.
+
+**The AFE needed one more delta on `v4.4.2`.** Its first boot there panicked before the
+banner, in `k_mem_map_phys_bare()`: on `v4.4.2`, `device_map()` allocates virtual addresses
+from the kernel's 8 MB virtual range, and the 8 MB DMA region cannot fit beside the image.
+Upstream `229815dbd85` (2026-03-28) made arm64 identity-map device MMIO and has
+`device_map()` add `K_MEM_DIRECT_MAP` itself; `v4.4.2` has neither. A larger virtual range
+would not do — the samples hand the AFE a buffer's linker address as its physical address, so
+the region has to be mapped one to one. On `mtk-v4.4.2` only, the driver selects
+`KERNEL_DIRECT_MAP` and passes `K_MEM_DIRECT_MAP` on its four maps: what `main` does for it.
+
+**The 510's cache-line options on `v4.4.2` — checked, left alone.** Its defconfig lacks the
+700's `*_LINE_SIZE_DETECT`. Nothing in our images reads the configured line size — arm64 on
+`v4.4.2` reads `CTR_EL0` for every cache operation — and the 510 passed the full suite on
+`v4.4.2` without them. The one visible effect is `sys_cache_data_line_size_get()`: 0 on the
+510, 64 on the 700. Aligning them is a two-line change if wanted.
+
 ## Genio 700 verified at `c5624eba9fa` (dev-agent, 2026-10-01)
+
+*eTDM1 superseded the same day: re-wired and clean — see above.*
 
 **Hardware suite 11/11 on the Genio 700, H9 and H10 included** — and on the Genio 510 too,
 once its jumper was fitted. Both EVKs now pass every hardware test at this tip.
@@ -41,7 +84,7 @@ below is folded into the commit that owns the lines.
 |---|---|---|
 | **Q1 / B1** EINT ownership | **Shared line by line**, as MediaTek's Jailhouse already does: its EINT mediator grants each cell individual lines, routes SPI 235 to the cell owning the asserting line, and drops any write that touches another cell's lines | `num-lines` 177 → **225**; init no longer masks every line (under the mediator that was a silent no-op anyway); the ISR scans all 225 and **stops any line the driver did not enable**, which keeps an asserted level from re-entering the handler. Binding documents the sharing. |
 | **Q2 / C3** AFE API | **Keep the custom API**; more interfaces may be added later. No I2S. | `route()` **kept** — with more interfaces a memory interface could reach more than one destination. C6 and C7 fixed instead (below). |
-| **Q3 / C1** GPL-2.0 header | **Option A**: MediaTek contributes the header and the ported driver logic under Apache-2.0 | **Not applied yet** — it is a licence change on MediaTek's behalf and lands only with MediaTek's authorisation, in a commit Aary signs off. |
+| **Q3 / C1** GPL-2.0 header | **Option A**: MediaTek contributes the header and the ported driver logic under Apache-2.0 | **Applied 2026-10-01**, as a generated file under Apache-2.0 — see the section above. |
 | **Q4 / C9** init priority | **Drop it** | Override removed. Clocks init at `PRE_KERNEL_1`, the AFE at `POST_KERNEL`, so the number never mattered; four builds pass with `CHECK_INIT_PRIORITIES=y`. |
 
 Also fixed: **C6** — the domain count is now taken only after the clocks are up, under a mutex
@@ -148,8 +191,9 @@ agents sharing this workspace cannot overwrite each other's console transcripts.
 add/remove, enable/disable, and removing a callback from inside itself. Two of its
 tests skip themselves because the driver returns `-ENOTSUP` for open-drain, which
 lives in the pin controller on this SoC; that is the test's own documented path.
-Overlays naming the two pins ship with the series under
-`tests/drivers/gpio/gpio_basic_api/boards/`.
+Self-contained overlays ship with the series under
+`tests/drivers/gpio/gpio_basic_api/boards/`: since 2026-10-01 they enable bank 1 and mux the
+two pins themselves, because the boards enable no GPIO.
 
 **Copyright is settled at 2026.** Every MediaTek file the series adds reads
 `Copyright (c) 2026 MediaTek Inc.`, normalised inside the commit that adds it.
@@ -276,9 +320,9 @@ clean series.
 
 | Branch | Tip | Contents | Verified |
 |---|---|---|---|
-| `main` | `3860b8cb663` | upstream mirror, fast-forwarded 1069 commits on 2026-09-10 | n/a |
-| `mtk-genio-dev` | `6cec5371c56` | **29 commits**: 16 PR A *review round 2* + 6 PR B + 6 for the Audio Front End. PR A portion is commit-for-commit identical to what is under review; `pra-r2` tags the boundary | gates, ADSP neutrality, 12/12 per-commit on the AFE six, **9/9 hardware on the 510 at the tip** |
-| `mtk-v4.4.2` | `05ef8eea7ec` | **22 commits** on `v4.4.2`: round-2 PR A + PR B, level with dev. Rebuilt cleanly — no customer is on it yet | gates 9/9, ADSP byte-identical, 39/39 per-commit, **700 11/11** |
+| `main` | `3c61a12bdd8` | upstream mirror, `v4.5.0-rc1`; PR A is in it (merged 2026-09-25) | n/a |
+| `mtk-genio-dev` | `9752f4c7b6c` | **11 commits** on `main`: 6 PR B + 5 for the Audio Front End | gates 4/4, 33/33 per-commit, **700 11/11** + five AFE tests |
+| `mtk-v4.4.2` | `2cedbcef66b` | **27 commits** on `v4.4.2`: PR A as merged + the same 11, six deliberate deltas (below). Rebuilt cleanly — no customer is on it yet | gates 9/9, ADSP byte-identical, 54/54 per-commit, **700 11/11** + five AFE tests |
 
 On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
 
@@ -288,23 +332,26 @@ On `github.com/mtk-zephyr/zephyr` (the upstream staging repo):
 
 `mtk-zephyr/zephyr` is a real fork of `zephyrproject-rtos/zephyr`, so the PR is cross-repo.
 
-Deliberately **no `Assisted-by:` trailers** on the PR A commits: they were ported from a
-working repo rather than written by an agent. Future Claude-authored work carries the tag
-(`doc/contribute/guidelines.rst`).
+**No `Assisted-by:` trailers anywhere in this porting effort** — Aary's decision of
+2026-09-23, covering every commit written since as well as the PR A commits.
 
 Backup tags: `pre-resync-dev` `d60c7e1f589`, `pre-resync-442` `c4333dd7d9c`,
 `pre-cpu-move` `95a72658a6b`.
 
-## mtk-v4.4.2 keeps four deliberate deltas — never reconcile them
+## mtk-v4.4.2 keeps six deliberate deltas — never reconcile them
 
 | File | v4.4.2 keeps | why |
 |---|---|---|
-| `mmu_regions.c` | static `GIC_DIST`/`GIC_REDIST` entries | `arch/arm64/core/mmu.c` supplies these generically on `main` but not on 4.4.2. Dropping them is a **silent boot failure** — no console output at all |
+| `mmu_regions.c`, and its line in `mt8188/CMakeLists.txt` | static `GIC_DIST`/`GIC_REDIST` entries | `arch/arm64/core/mmu.c` supplies these generically on `main` but not on 4.4.2. Dropping them is a **silent boot failure** — no console output at all |
 | `uart_mtk_common.c` | `int uart_mtk_irq_update` + `return 1` | 4.4.2's `uart_driver_api` returns `int` |
 | `uart_mtk_common.h` | matching `int` declaration | same |
 | 700 `_defconfig` | `CONFIG_D/ICACHE_LINE_SIZE_DETECT=y` | 4.4.2-only; dev has never carried these |
+| `snippets/mtk-afe/snippet.yml` | no `description:` key — kept as a comment | 4.4.2's snippet schema predates the key and rejects the file, failing every build |
+| `drivers/audio/mt8188_afe/mt8188_afe.c`, `Kconfig.mt8188_afe` | `K_MEM_DIRECT_MAP` on the four maps; `select KERNEL_DIRECT_MAP` | `main` identity-maps device MMIO by itself since `229815dbd85`; 4.4.2 does not, and the DMA region has to be one to one |
 
-Of the 52 files the series adds, exactly these four differ between the branches.
+Of the 89 files the series adds, only these differ between the branches — plus
+`uart_mt8188.c`, which is not a delta: upstream's tree-wide `&init_fn` cleanup
+(`cb1f2eb488a`, 2026-09-27) came after the merge and is not on 4.4.2.
 
 ## PR A did not build on its own — fixed 2026-09-09
 
