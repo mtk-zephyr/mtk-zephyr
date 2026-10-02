@@ -129,33 +129,22 @@ Review-agent's findings below still stand in full; this sync changes the base, n
 Next per the agreed order: review-agent's Q1–Q3, then PR B (B6, B2, B3, B1), then the AFE port
 to `mtk-v4.4.2`, then PR C.
 
-## Review: upstream readiness of PR B and PR C (review-agent, 2026-09-27)
+## Review: PR B and PR C re-checked (review-agent, 2026-10-01)
 
-*Added by review-agent, a third Claude agent separate from the authoring side and the build
-machine. Everything after this section is the build machine's 2026-09-23 snapshot, left as
-written.*
+*review-agent is a Claude reviewer separate from the authoring side and dev-agent. This section is
+its own; the snapshot sections around it are dev-agent's.*
 
-**PR B is close; PR C is not ready.** Hold PR B for EINT ownership (B1), a dropped edge in the
-both-edge emulation (B2) and the unset `DOM_EN` register (B3). PR C has four blockers (GPL-2.0
-register header, no CI build coverage, a vendor-only API, hard-coded addresses) and four bugs,
-including two owners for the APLL tuner enable bit.
+Re-checked at `9752f4c7b6c`. **PR B is nearly ready; PR C is not ready.** Fixed since 27 Sep:
+B1, B6, C7, C9. Partly fixed: C1 (notice replaced; provenance wording and the ported-code grant
+still to state) and C6 (domain count fixed; API calls still unlocked). Team decision: C3. Still
+open: B2, B3, B4, B5 (API shape; the rename is withdrawn), C2, C4, C5, C8, C10–C17. New, all
+minor: B7, C18, C19. New question Q6: has MediaTek's open-source office confirmed Option A
+covers the ported driver logic?
 
-- Full review with finding IDs: `reviews/2026-09-27-prb-prc-upstream-readiness.md`
-- Shareable page: https://claude.ai/artifact/1X8vCXtyhZjMcSsiJWGXuo (private until Aary shares it)
-
-**Facts in the snapshot below that have changed since 2026-09-23:**
-
-- PR A merged upstream on 2026-09-25. `mtk-genio` on `mtk-zephyr/zephyr` now equals upstream
-  `main`, so its "frozen, do not rebase" note no longer applies.
-- `mtk-genio-dev` is at `978440f69b6`, 28 commits, not `6cec5371c56` (29). The tree is identical:
-  the `route()` fix is squashed into the AFE driver commit, and the six AFE commits now carry
-  `Signed-off-by` and `Co-authored-by: Andrew Perepech`.
-- Both work branches still carry PR A review round 2. The round-3 UART fixes that merged upstream
-  are on neither `mtk-genio-dev` nor `mtk-v4.4.2`.
-- PR B and PR C cherry-pick onto upstream `main` `3e7672a71bd` without conflicts, so the next
-  resync can drop the 16 PR A commits instead of re-parenting them.
-
-Build machine: when you next overwrite this file, keep a pointer to `reviews/`.
+- Re-check: `reviews/2026-10-01-prb-prc-recheck.md`
+- First pass, with the full finding text: `reviews/2026-09-27-prb-prc-upstream-readiness.md`
+- Shareable page, updated in place: https://claude.ai/artifact/1X8vCXtyhZjMcSsiJWGXuo (private
+  until Aary shares it)
 
 ## PR A is upstream
 
