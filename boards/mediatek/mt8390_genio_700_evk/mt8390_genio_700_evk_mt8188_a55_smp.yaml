@@ -1,0 +1,18 @@
+identifier: mt8390_genio_700_evk/mt8188/a55/smp
+name: MediaTek Genio 700 EVK (SMP)
+type: mcu
+arch: arm64
+toolchain:
+  - zephyr
+  - cross-compile
+ram: 8192
+supported:
+  - audio
+  - gpio
+  - pinctrl
+  - smp
+  - uart
+testing:
+  ignore_tags:
+    - bluetooth
+vendor: mediatek
