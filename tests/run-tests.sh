@@ -307,18 +307,25 @@ PY
 	done
 
 	# --- H7: cell restart cycling ---------------------------------------
+	# Each cycle's setup output and the transcript are kept: a missed boot is
+	# otherwise indistinguishable from a missed capture.
 	start_logger || true
 	: > "$UART_LOG"
-	cycles=6; booted=0
-	for _ in $(seq $cycles); do
-		run_cell "zephyr-$BOARD_TAG-hwtest.bin" >/dev/null 2>&1
+	cycles=6; booted=0; missed=""
+	for c in $(seq $cycles); do
+		before="$(grep -c 'Booting Zephyr OS' "$UART_LOG")"
+		adb shell "${CELL_DIR:+CELL_DIR=$CELL_DIR }$BOARD_SETUP zephyr-$BOARD_TAG-hwtest.bin" \
+			>"$LOG_DIR/h7-cycle$c.log" 2>&1
+		echo "exit $?" >>"$LOG_DIR/h7-cycle$c.log"
 		sleep 2
+		[ "$(grep -c 'Booting Zephyr OS' "$UART_LOG")" -gt "$before" ] || missed="$missed $c"
 	done
 	sleep 2
+	cp "$UART_LOG" "$LOG_DIR/h7-uart.log"
 	booted="$(grep -c 'Booting Zephyr OS' "$UART_LOG")"
 	[ "$booted" -eq "$cycles" ] \
 		&& pass "H7 cell restart cycling" "$booted/$cycles clean boots" \
-		|| fail "H7 cell restart cycling" "$booted/$cycles boots seen"
+		|| fail "H7 cell restart cycling" "$booted/$cycles boots seen, missed cycle(s)${missed:- none}; see $LOG_DIR/h7-*"
 
 	# --- H8: the declared memory window is actually granted --------------
 	# A plain boot cannot tell an 8 MB Jailhouse grant from a 2 MB one, since

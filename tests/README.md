@@ -356,13 +356,16 @@ say nothing about the code.
 ```
 GPIOTEST device ready, drive=pin6 sense=pin8
 PASS B4-both-rising 4 rising edges produced 4 event(s)
-GPIOTEST DONE passed=19 failed=0 -> PASS
+GPIOTEST DONE passed=25 failed=0 -> PASS
 ```
 
-Nineteen checks: reserved pins refused (`-EINVAL`), output drives and input reads
-it back, `gpio_pin_toggle` moves the pad, level-triggered interrupts refused
-(`-ENOTSUP`), rising-only and falling-only each fire on their own edge and ignore
-the other, both-edges, and interrupt disable actually silencing delivery.
+Twenty-five checks: reserved pins refused (`-EINVAL`), output drives and input
+reads it back, `gpio_pin_toggle` moves the pad, rising-only and falling-only each
+fire on their own edge and ignore the other, both-edges, level-high and level-low
+each quiet while inactive and firing once active — including when armed while
+already active — and interrupt disable actually silencing delivery. The handler
+disables a level interrupt on its first event, as the GPIO API asks of a level
+consumer, so each level check expects exactly one event.
 
 **Why software edges rather than a button.** The controller detects one condition
 per line, so both-edges is emulated by flipping the polarity inside the handler.
@@ -371,7 +374,9 @@ working code until the events are *counted*. Driving pin 6 in software gives
 exact counts with no bounce; a button gives neither. The test asserts four rising
 and four falling, separately.
 
-Both parts pass 19/19: MT8390 on the Genio 700 and MT8370 on the Genio 510.
+The Genio 700 passes 25/25 since level triggers were added (2026-10-03). Both
+parts passed the earlier 19-check version, which asserted that level triggers
+were refused.
 
 ## Running under the Audio Front End cell
 
