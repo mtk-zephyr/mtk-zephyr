@@ -4110,6 +4110,7 @@ MediaTek Platforms:
     - drivers/*/*mtk*
     - dts/arm64/mediatek/
     - dts/bindings/*/mediatek,*
+    - include/zephyr/drivers/*/*mtk*
     - include/zephyr/dt-bindings/*/mt8*
     - include/zephyr/dt-bindings/*/mtk*
   labels:
