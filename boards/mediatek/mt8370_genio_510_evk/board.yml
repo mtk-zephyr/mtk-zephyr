@@ -4,3 +4,6 @@ board:
   vendor: mediatek
   socs:
     - name: mt8188
+      variants:
+        - name: smp
+          cpucluster: a55
