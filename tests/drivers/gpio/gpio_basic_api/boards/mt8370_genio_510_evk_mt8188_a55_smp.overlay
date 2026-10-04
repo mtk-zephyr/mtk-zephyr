@@ -1,0 +1,7 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "mt8370_genio_510_evk_mt8188_a55.overlay"
