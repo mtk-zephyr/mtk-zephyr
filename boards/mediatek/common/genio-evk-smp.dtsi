@@ -1,0 +1,27 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Two-core SMP layout shared by the Genio EVKs.
+ *
+ * The genio-<board>-evk-zephyr-smp Jailhouse cell grants the A55 cores at
+ * MPIDR 0x200 and 0x300 and starts the lower one at the image entry; Zephyr
+ * starts the other with PSCI CPU_ON (see the SoC devicetree).  The board
+ * devicetree already enables cpu@300.
+ *
+ * The cores enabled here must be the ones the genio-<board>-evk-zephyr-smp
+ * cells grant, which are defined in mtk-jailhouse's configs/arm64/.  Nothing
+ * checks that the two agree; the board documentation describes what a
+ * mismatch looks like.
+ */
+
+/ {
+	cpus {
+		cpu@200 {
+			status = "okay";
+		};
+	};
+};

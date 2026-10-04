@@ -18,8 +18,9 @@ DSP. MediaTek describes it as pin-to-pin and software compatible with the
 higher-performance Genio 700, which is why both boards share this port's SoC,
 drivers and devicetree.
 
-Zephyr runs on **one Cortex-A55 core** of this board, as a Jailhouse inmate
-alongside Linux. See `Programming and Debugging`_.
+Zephyr runs on **one Cortex-A55 core** of this board, or on two with the
+``smp`` variant, as a Jailhouse inmate alongside Linux. See `Programming and
+Debugging`_.
 
 Hardware
 ********
@@ -95,9 +96,10 @@ region at ``0x61000000``:
 .. important::
 
    An image built with this snippet needs a Jailhouse cell that grants the AFE.
-   The plain ``genio-510-evk-zephyr`` cell grants none of the five register
-   blocks the driver touches, and the inmate is stopped on the first access.
-   Build without the snippet for that cell.
+   The ``genio-510-evk-zephyr-afe`` cell does, and ``genio-510-evk-zephyr-afe-smp``
+   for the ``smp`` variant; the plain ``genio-510-evk-zephyr`` cell grants none of
+   the five register blocks the driver touches, and the inmate is stopped on the
+   first access. Build without the snippet for that cell.
 
 The snippet is deliberately separate rather than being part of the board, so
 the default image keeps working on the plain cell.
@@ -200,6 +202,73 @@ Output appears on the console described in `Connections and IOs`_:
 
    *** Booting Zephyr OS build v4.4.0 ***
    Hello World! mt8370_genio_510_evk/mt8188/a55
+
+Running on a Cortex-A78 core
+----------------------------
+
+A single-core image does not depend on the core it runs on, so the image
+built for ``mt8370_genio_510_evk/mt8188/a55`` also runs in the
+``genio-510-evk-zephyr-a78`` cell, on the Cortex-A78 CPU 5. The ``a55`` in
+the board target names the cluster the build is tuned for, not a requirement.
+Create ``genio-510-evk-zephyr-a78.cell`` instead of
+``genio-510-evk-zephyr.cell`` when loading it.
+
+Running on two cores
+--------------------
+
+The ``smp`` variant runs Zephyr's SMP kernel on two Cortex-A55 cores, CPU 2 and
+CPU 3, under the ``genio-510-evk-zephyr-smp`` cell:
+
+.. zephyr-app-commands::
+   :zephyr-app: samples/arch/smp/pi
+   :host-os: unix
+   :board: mt8370_genio_510_evk/mt8188/a55/smp
+   :goals: build
+
+Load it as above, creating ``genio-510-evk-zephyr-smp.cell`` instead of
+``genio-510-evk-zephyr.cell``. The cell starts CPU 2 at ``0x8000``, and Zephyr
+starts CPU 3 with PSCI ``CPU_ON``. The hypervisor accepts PSCI calls only by
+SMC, which is how the SoC devicetree calls the firmware; an HVC that is not a
+hypervisor call stops the cell. The cell grants the same
+memory window, console and GPIO pins as the plain one. For audio, build with
+the ``mtk-afe`` snippet as well and create ``genio-510-evk-zephyr-afe-smp.cell``,
+which also grants the AFE.
+
+.. important::
+
+   The SMP cells, and the hypervisor support they need, come with release
+   ``mtk-v1.0.0`` of `mtk-jailhouse`_ or later. An older hypervisor does not
+   emulate the pending state of SGIs, and an SMP image can then deadlock at
+   start-up: while waiting for a spinlock, Zephyr polls the pending state of an
+   SGI from the other core, which such a hypervisor never reports as pending.
+
+.. _mtk-jailhouse:
+   https://github.com/mtk-jailhouse/jailhouse
+
+If the image and the cell do not agree on the cores, the image fails, and in one
+case without a word:
+
+* An ``smp`` image started on a core it does not expect, for example in the
+  ``genio-510-evk-zephyr-a78`` cell (MPIDR ``0x700``), stops in its first
+  instructions. The boot code looks the core up among the enabled cpu nodes,
+  finds none and waits forever, before the console is set up. The cell reports
+  ``running`` and nothing appears on the console, which looks exactly like a
+  dead serial capture.
+* An ``smp`` image in a one-core cell, for example ``genio-510-evk-zephyr``,
+  boots on CPU 3 and asks the hypervisor to start CPU 2, which is refused. It
+  prints ``Failed to boot secondary CPU core 1 (MPID:0x200)``, then panics and
+  halts, while the cell still reports ``running``.
+
+The variant enables CPU 2 and CPU 3 because those are the cores the SMP cells
+grant. For another core set, for example three cores or the two A78 cores, a
+cell that grants them is needed, and on the Zephyr side either another variant
+or an application overlay that enables the cores, with ``CONFIG_SMP=y``,
+``CONFIG_MP_MAX_NUM_CPUS`` and ``CONFIG_PM_CPU_OPS=y`` in the application's
+configuration.
+
+An application's board overlay names the full board target, so an overlay
+written for ``mt8370_genio_510_evk/mt8188/a55`` is not applied to the ``smp``
+variant. Add one for the variant that includes it.
 
 To stop and unload the inmate:
 
