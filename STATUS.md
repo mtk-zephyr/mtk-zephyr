@@ -3,6 +3,47 @@
 Current state of the MediaTek Genio work on `github.com/mtk-zephyr/mtk-zephyr`. This file is
 overwritten on every update; `git log` on this branch is the history.
 
+## PR B review items done: B2, B3, B4, B5, B7, Q5 (dev-agent, 2026-10-03)
+
+`mtk-genio-dev` is **`f7df9da7da0`** and `mtk-v4.4.2` is **`b8384e28484`**, still 11 and 27 commits: every
+change is folded into the commit that owns it, and the PR B messages are cut to two paragraphs.
+Decided with Aary: fix B2, B3 and B7, support level triggers (B4), make the EINT interface a
+device API (B5 option a).
+
+| Item | Done |
+|---|---|
+| **B2** both-edge emulation | Re-arms with a new `eint_mtk_set_polarity()`, which changes the polarity only and acknowledges nothing, so an edge during the re-arm stays latched and fires. No software re-raise is needed: the driver re-arms *before* its callbacks, and a polarity write that lands after the pin moved matches the new level, which the controller latches as the edge it is. |
+| **B3** `DOM_EN` never written | Set per line on enable, read-modify-write under the lock; the hypervisor's mediator merges a cell's own bits. **Proven on the Genio 700**: with line 40's bit cleared from Linux, the old driver saw no edge events (16/25), the new one passed 25/25 and set the bit again itself. |
+| **B4** level triggers | Supported; the callback stops a level, per the GPIO API. `gpio_basic_api`'s four level variants now really run — each fires three times until its callback disables it — and H9 gained seven level checks (25 in all). |
+| **B5** EINT interface | A device API: `__subsystem struct eint_mtk_driver_api`, `DEVICE_API` in the driver, the same `eint_mtk_*` names as inline wrappers, so the GPIO driver is unchanged; `struct eint_mtk_callback` replaces the struct typedef. |
+| **B7** binding text | The binding describes the hardware only; the line-sharing note moved to the board docs. |
+| **Q5** `Assisted-by:` | Answered: MediaTek asked that the porting commits carry none; it is used again after PR B and PR C. |
+
+**Wording.** How the code was produced is now described correctly in the AFE commit message,
+this file, `CONTEXT.md` and the local notes: with a tool a person built and reviewed. How the
+AFE commit should state the relicensing stays open (C1, Q6).
+
+| Verified | `mtk-genio-dev` `f7df9da7da0` | `mtk-v4.4.2` `b8384e28484` |
+|---|---|---|
+| Gates | 4/4, compliance and checkpatch clean | 4/4; checkpatch's two warnings are 4.4.2's older checkpatch on the GPIO driver's MMIO declarations |
+| Per-commit sweep | 33/33 | 54/54 |
+| GPIO-dependent tests in the tree, both EVKs | 4 built, 0 failed | 10 built, 0 failed |
+| Genio 700 hardware suite | 10/11 — H7 saw 5/6 boots once, then 12/12 on a repeat with the same image | three runs: every test passed in at least one; each failure was a transfer, a flash or an H7 capture during a USB drop |
+| H9 / H10 | 25/25 / 5 pass, 2 open-drain skips | same |
+| AFE on the Genio 700 | `api_reject` 15/15, `loopback_dl11_ul8` 10 s clean | same |
+
+**One mistake during the B3 test, undone.** A read helper failed to strip carriage returns, so
+the clear wrote 0 to `DOM_EN` word 1 — lines 32–63 — instead of clearing one bit. It was back
+at `0xFFFFFFFF`, the value Linux writes at boot, within minutes. No Linux device uses those
+lines (its EINT users are lines 2, 12, 83 and 218–222), so nothing missed an interrupt.
+
+**The USB link was unreliable during these runs:** 37 disconnects of the board's USB device in 40
+minutes, with the board staying up. Transfers are md5-checked, so a corrupted push fails as a
+transfer rather than as a test; worth a look at the cable or port.
+
+**samples-agent:** `gpio/loopback` asserts level triggers are refused, so it fails from this
+tip; the exact change is in `local-agents-handover/`.
+
 ## Both branches rebuilt: GPIO off the boards, the AFE on `mtk-v4.4.2` (dev-agent, 2026-10-01)
 
 `mtk-genio-dev` is **`9752f4c7b6c`**, eleven commits on upstream `3c61a12bdd8`.
@@ -11,7 +52,7 @@ the same eleven. Decided with Aary today:
 
 | Change | Detail |
 |---|---|
-| **`mt8188_afe_reg.h` relicensed** (Q3) | Generated from the AFE register map, so it is now a fresh Apache-2.0 file with no inherited notice, and its GPL-2.0 entry in `REUSE.toml` is gone. All 3,058 definitions byte-identical. |
+| **`mt8188_afe_reg.h` relicensed** (Q3) | Now a fresh Apache-2.0 file with no inherited notice, and its GPL-2.0 entry in `REUSE.toml` is gone. All 3,058 definitions byte-identical. |
 | **GPIO left the boards** | The board files enable no GPIO bank and carry no 38/40 pin state or reservation — they match upstream again. PR B's last commit is now `tests: drivers: gpio: enable gpio_basic_api on the Genio EVKs`: self-contained overlays that enable bank 1 and mux 38/40, `supported: gpio` so CI builds the test, and a short board-doc note on enabling a bank. 38/40 are what the stock cell grants, not a feature of the board; boards upstream name pins only for physical features such as LEDs and buttons. |
 | **Your `0007` is dropped** | `document where GPIO 38 and 40 reach the header`. The header map and the pin-20 warning live in `mtk-zephyr/samples` (`doc/hardware.md`, `gpio/loopback`). |
 
@@ -84,7 +125,7 @@ below is folded into the commit that owns the lines.
 |---|---|---|
 | **Q1 / B1** EINT ownership | **Shared line by line**, as MediaTek's Jailhouse already does: its EINT mediator grants each cell individual lines, routes SPI 235 to the cell owning the asserting line, and drops any write that touches another cell's lines | `num-lines` 177 → **225**; init no longer masks every line (under the mediator that was a silent no-op anyway); the ISR scans all 225 and **stops any line the driver did not enable**, which keeps an asserted level from re-entering the handler. Binding documents the sharing. |
 | **Q2 / C3** AFE API | **Keep the custom API**; more interfaces may be added later. No I2S. | `route()` **kept** — with more interfaces a memory interface could reach more than one destination. C6 and C7 fixed instead (below). |
-| **Q3 / C1** GPL-2.0 header | **Option A**: MediaTek contributes the header and the ported driver logic under Apache-2.0 | **Applied 2026-10-01**, as a generated file under Apache-2.0 — see the section above. |
+| **Q3 / C1** GPL-2.0 header | **Option A**: MediaTek contributes the header and the ported driver logic under Apache-2.0 | **Applied 2026-10-01**, as a fresh file under Apache-2.0 — see the section above. |
 | **Q4 / C9** init priority | **Drop it** | Override removed. Clocks init at `PRE_KERNEL_1`, the AFE at `POST_KERNEL`, so the number never mattered; four builds pass with `CHECK_INIT_PRIORITIES=y`. |
 
 Also fixed: **C6** — the domain count is now taken only after the clocks are up, under a mutex
@@ -96,8 +137,8 @@ that could never run; wiring the interrupts is still open.
 in-tree convention for this property — ST, GigaDevice, NXP and WCH bindings all use it,
 across ~50 devicetrees.
 
-**Settled, no longer open:** credit for the authors of the original GPIO and EINT drivers is
-not needed — that code is generated, not written by a person.
+**Settled, no longer open:** the authors of the original GPIO and EINT drivers are not
+credited individually — Aary's decision.
 
 Verified at `c5624eba9fa`: gates 9/9 with ADSP neutrality, 36/36 per-commit, 24/24 AFE and
 GPIO builds, hardware suite 9/9 on the Genio 510, all five AFE tests. **H9/H10 still owed**:

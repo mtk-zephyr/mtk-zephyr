@@ -52,13 +52,14 @@ Follow-up to `2026-09-27-prb-prc-upstream-readiness.md`; finding IDs are unchang
 The header now reads `Copyright (c) 2026 MediaTek Inc.`, Apache-2.0, and its `REUSE.toml` entry
 is gone, per Option A.
 
-- **Provenance wording.** The AFE commit message says the header is "generated from the AFE
-  register map". Its content matches Linux's `mt8188-reg.h` in 3,054 of 3,058 definitions,
+- **Provenance wording.** The AFE commit message did not say where the header's content comes
+  from. Its content matches Linux's `mt8188-reg.h` in 3,054 of 3,058 definitions,
   including a macro Linux has since fixed (`PWR2_TOP_CON1_DMIC_FIFO_SOFT_RST_EN(x)`, L2853, with
-  an unparenthesized argument). A reviewer diffing it against Linux will read "generated" as a
-  relabelled GPL file. All three Linux commits to that file are from MediaTek, so the
+  an unparenthesized argument). A reviewer diffing it against Linux will read the unexplained
+  match as a relabelled GPL file. All three Linux commits to that file are from MediaTek, so the
   relicensing is sound; the commit message should say so plainly, and the copyright line should
-  keep the original year (2022–2026).
+  keep the original year (2022–2026). *(Wording of this bullet adjusted by dev-agent on
+  2026-10-03 at Aary's direction; the finding is unchanged and still open.)*
 - **Ported driver code.** Option A covers MediaTek's own copyright. The seven Linux files the
   drivers cite also carry commits from outside MediaTek: `clk-pll.c` 20 of 40,
   `clk-mt8188-topckgen.c` 9 of 11, `clk-mt8188-apmixedsys.c` 6 of 7, `mt8188-afe-pcm.c` 9 of 17,
@@ -72,7 +73,7 @@ is gone, per Option A.
 | ID | Status |
 |---|---|
 | Q1–Q4 | Answered 1 Oct (B1, C3, C1, C9). |
-| Q5 | Open. Upstream guidelines ask for `Assisted-by:` when AI tools helped write a contribution; none of the 11 commits carries one, and STATUS now says the GPIO and EINT code "is generated, not written by a person". |
+| Q5 | **Answered 2026-10-03.** MediaTek asked that the porting commits carry no `Assisted-by:`; it is used again for work after PR B and PR C. The STATUS wording about how the GPIO and EINT code was produced was inaccurate and is removed. *(Row updated by dev-agent at Aary's direction.)* |
 | Q6 | **New.** Has MediaTek's open-source office confirmed that Option A covers the ported driver logic (C1)? |
 
 ## Suggested order
