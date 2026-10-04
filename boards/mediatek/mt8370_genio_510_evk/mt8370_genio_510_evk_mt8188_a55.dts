@@ -21,8 +21,11 @@
 	};
 
 	/*
-	 * Zephyr is handed a single A55 core and the memory window below by the
-	 * hypervisor; the remaining cores and memory stay with the host.
+	 * Zephyr is handed a single core and the memory window below by the
+	 * hypervisor; the remaining cores and memory stay with the host.  A
+	 * single-core build never reads the cpu nodes, so the image runs on
+	 * whichever core the cell grants, A55 or A78, although only cpu@300 is
+	 * left enabled here.
 	 *
 	 * MT8390 has six A55 cores and MT8370 four, so cpu@400 and cpu@500 are
 	 * absent on the latter; disabling them here covers both parts.
@@ -45,6 +48,14 @@
 		};
 
 		cpu@500 {
+			status = "disabled";
+		};
+
+		cpu@600 {
+			status = "disabled";
+		};
+
+		cpu@700 {
 			status = "disabled";
 		};
 	};

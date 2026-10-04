@@ -51,6 +51,18 @@
 			compatible = "arm,cortex-a55";
 			reg = <0x500>;
 		};
+
+		cpu6: cpu@600 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a78";
+			reg = <0x600>;
+		};
+
+		cpu7: cpu@700 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a78";
+			reg = <0x700>;
+		};
 	};
 
 	arch_timer: timer {
