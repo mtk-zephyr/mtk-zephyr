@@ -4,6 +4,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * @file
+ * @brief MediaTek external interrupt (EINT) consumer interface.
+ */
+
 #ifndef ZEPHYR_INCLUDE_DRIVERS_INTERRUPT_CONTROLLER_INTC_MTK_EINT_H_
 #define ZEPHYR_INCLUDE_DRIVERS_INTERRUPT_CONTROLLER_INTC_MTK_EINT_H_
 
@@ -102,7 +107,7 @@ __subsystem struct eint_mtk_driver_api {
  * @param cb_arg     Argument passed to the handler.
  *
  * @retval 0 on success.
- * @retval -EINVAL if a required argument is NULL or the range is empty.
+ * @retval -EINVAL A required argument is NULL or the range is empty.
  */
 static inline int eint_mtk_init_callback(struct eint_mtk_callback *callback, uint8_t first_line,
 					 uint8_t num_lines, eint_mtk_cb_handler_t cb_handler,
@@ -130,7 +135,7 @@ static inline int eint_mtk_init_callback(struct eint_mtk_callback *callback, uin
  * @param callback Registration filled in by eint_mtk_init_callback().
  *
  * @retval 0 on success.
- * @retval -EINVAL if the registration is malformed, reaches past the last line
+ * @retval -EINVAL The registration is malformed, reaches past the last line
  *                 of the controller, or overlaps one already registered.
  */
 static inline int eint_mtk_add_callback(const struct device *dev,
@@ -161,7 +166,7 @@ static inline void eint_mtk_remove_callback(const struct device *dev,
  * @param line Line to enable.
  *
  * @retval 0 on success.
- * @retval -EINVAL if the line is past the last one of the controller.
+ * @retval -EINVAL The line is past the last one of the controller.
  */
 static inline int eint_mtk_enable(const struct device *dev, uint8_t line)
 {
@@ -175,7 +180,7 @@ static inline int eint_mtk_enable(const struct device *dev, uint8_t line)
  * @param line Line to disable.
  *
  * @retval 0 on success.
- * @retval -EINVAL if the line is past the last one of the controller.
+ * @retval -EINVAL The line is past the last one of the controller.
  */
 static inline int eint_mtk_disable(const struct device *dev, uint8_t line)
 {
@@ -207,7 +212,7 @@ static inline bool eint_mtk_is_enabled(const struct device *dev, uint8_t line)
  * @param trig Condition to detect.
  *
  * @retval 0 on success.
- * @retval -EINVAL if the line is past the last one of the controller, or the
+ * @retval -EINVAL The line is past the last one of the controller, or the
  *                 condition is not one of @ref eint_mtk_trigger.
  */
 static inline int eint_mtk_set_trigger(const struct device *dev, uint8_t line,
@@ -229,7 +234,7 @@ static inline int eint_mtk_set_trigger(const struct device *dev, uint8_t line,
  * @param high Respond to the high side rather than the low side.
  *
  * @retval 0 on success.
- * @retval -EINVAL if the line is past the last one of the controller.
+ * @retval -EINVAL The line is past the last one of the controller.
  */
 static inline int eint_mtk_set_polarity(const struct device *dev, uint8_t line, bool high)
 {
