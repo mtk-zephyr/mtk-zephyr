@@ -5,7 +5,8 @@
 name: mtk-afe
 
 boards:
-  # Both Genio EVKs: same die, same AFE, same audio serial pins.
+  # Both Genio EVKs include mt8188.dtsi, which defines the AFE node, and
+  # route the audio serial pins identically.
   /.*mt(8390_genio_700|8370_genio_510)_evk.*/:
     append:
       EXTRA_CONF_FILE: mtk-afe.conf

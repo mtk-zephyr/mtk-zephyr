@@ -7,10 +7,9 @@
 /*
  * Pin control states shared by the Genio EVKs.
  *
- * The Genio 700 EVK (MT8390) and the Genio 510 EVK (MT8370) are reference
- * designs around the same die and route the audio serial pins identically, so
- * the states below describe both.  A board that routed them differently would
- * declare its own rather than include this.
+ * The Genio 700 EVK (MT8390) and the Genio 510 EVK (MT8370) route the audio
+ * serial pins identically, so the states below describe both.  A board that
+ * routed them differently would declare its own rather than include this.
  */
 
 #include <zephyr/dt-bindings/pinctrl/mt8188-pinctrl.h>
