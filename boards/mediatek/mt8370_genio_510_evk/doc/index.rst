@@ -150,6 +150,20 @@ Zephyr is given one Cortex-A55 core and an 8 MB window of DRAM, which the cell
 places at ``0x8000`` in the inmate's own address space. The other cores and all
 remaining peripherals stay with Linux.
 
+The core's clock stays with Linux. Linux's cpufreq sets one frequency for the
+whole A55 cluster, and one for the two A78 cores, from the load it sees, so
+Zephyr runs at whatever frequency Linux's governor picks for its cluster. With
+the default ``schedutil`` governor and Linux idle, that can be the lowest one.
+On this board, processing on CPU 3 took about 35% longer under ``schedutil``
+than under ``performance``. For measurements that depend on speed, set the
+governor on the Linux side first:
+
+.. code-block:: console
+
+   for p in /sys/devices/system/cpu/cpufreq/policy*; do
+       echo performance > $p/scaling_governor
+   done
+
 Prerequisites
 =============
 
