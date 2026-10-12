@@ -1,0 +1,15 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config HWINFO_MT8188
+	bool "MediaTek MT8188 reset cause"
+	default y
+	depends on DT_HAS_MEDIATEK_MT8188_WDT_ENABLED
+	select HWINFO_HAS_DRIVER
+	help
+	  Report the cause of the last reset, as the top reset generation unit
+	  records it: a watchdog expiry or a software reset.
+
+	  The cause is read from the unit's status register at boot.  The
+	  driver depends on the watchdog node being enabled, since it reads
+	  the same register block.
