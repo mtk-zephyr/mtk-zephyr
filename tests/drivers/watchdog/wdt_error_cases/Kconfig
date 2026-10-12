@@ -57,6 +57,14 @@ config TEST_WDT_WINDOW_MIN_SUPPORTED
 	  Set this Kconfig to 'y' if wdt_install_timeout() can be called with
 	  cfg.window.min value higher than 0.
 
+config TEST_WDT_DEFAULT_WINDOW_MAX
+	int "Watchdog timeout of the test cases that do not test the window"
+	default 500
+	help
+	  window.max, in milliseconds, of the timeouts installed by the test
+	  cases in which the value itself is not under test.  Raise it on a
+	  watchdog whose shortest timeout is longer than 500 ms.
+
 config TEST_WDT_WINDOW_MAX_ALLOWED
 	hex "Maximal value of Watchdog timeout"
 	default 0x07CFFFFF if NRFX_WDT
