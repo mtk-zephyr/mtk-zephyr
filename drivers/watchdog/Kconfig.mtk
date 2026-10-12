@@ -1,0 +1,16 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+config WDT_MT8188
+	bool "MediaTek MT8188 watchdog driver"
+	default y
+	depends on DT_HAS_MEDIATEK_MT8188_WDT_ENABLED
+	select HAS_WDT_DISABLE_AT_BOOT
+	select HAS_WDT_NO_CALLBACKS
+	help
+	  Enable the driver for the watchdog of the MediaTek MT8188 top reset
+	  generation unit (TOPRGU).
+
+	  It offers one timeout of 2 to 31 seconds, and an expiry resets the
+	  SoC.  The unit raises no interrupt before the reset, so a timeout
+	  cannot have a callback.
