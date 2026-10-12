@@ -118,4 +118,4 @@ void control_thread(void)
 	}
 }
 
-K_THREAD_DEFINE(control, 1024, control_thread, NULL, NULL, NULL, -1, 0, 1000);
+K_THREAD_DEFINE(control, 2048, control_thread, NULL, NULL, NULL, -1, 0, 1000);
