@@ -120,6 +120,30 @@ The interface is in :zephyr_file:`include/zephyr/drivers/audio/mt8188_afe.h`.
 It is not the Zephyr DAI interface: the routing matrix, the channel-merge units
 and the co-clocked port pairs have no expression in DAI.
 
+Watchdog
+--------
+
+The watchdog of the top reset generation unit (TOPRGU) is off by default and
+enabled with the ``mtk-wdt`` snippet, which turns on the node behind the
+``watchdog0`` alias and the watchdog driver:
+
+.. code-block:: console
+
+   west build -b mt8390_genio_700_evk/mt8188/a55 -S mtk-wdt <app>
+
+It offers one timeout of 2 to 31 seconds in steps of 1/64 second, and an expiry
+resets the SoC. The unit raises no interrupt first, so a timeout cannot have a
+callback. :zephyr_file:`samples/subsys/task_wdt` uses it as the task watchdog's
+hardware fallback.
+
+.. important::
+
+   No Jailhouse cell of mtk-jailhouse ``mtk-v1.0.0`` provides the watchdog. The
+   plain cells do not grant the block, and the inmate is stopped on the first
+   access. The AFE cells grant the whole block, which Linux uses as its own
+   watchdog, so an image built with this snippet would arm the SoC's watchdog;
+   do not run it there.
+
 Programming and Debugging
 *************************
 
