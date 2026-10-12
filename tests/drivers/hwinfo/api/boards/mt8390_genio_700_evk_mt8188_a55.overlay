@@ -1,0 +1,10 @@
+/*
+ * Copyright (c) 2026 MediaTek Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* The reset cause is read from the watchdog's block, which the board leaves disabled. */
+&wdt {
+	status = "okay";
+};
