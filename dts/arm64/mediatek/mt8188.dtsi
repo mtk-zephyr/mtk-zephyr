@@ -199,6 +199,18 @@
 		};
 	};
 
+	/*
+	 * The watchdog of the top reset generation unit.  The same block holds
+	 * the subsystem reset lines, which the AFE driver pulses through its
+	 * own mapping of it.  Off unless an image asks for it, for example with
+	 * the mtk-wdt snippet.
+	 */
+	wdt: watchdog@10007000 {
+		compatible = "mediatek,mt8188-wdt";
+		reg = <0x10007000 0x100>;
+		status = "disabled";
+	};
+
 	afe: afe@10b10000 {
 		compatible = "mediatek,mt8188-afe";
 		reg = <0x10b10000 0x10000>;
