@@ -15,6 +15,10 @@
 	model = "MediaTek Genio 510 EVK";
 	compatible = "mediatek,mt8370-genio-510-evk";
 
+	aliases {
+		watchdog0 = &wdt;
+	};
+
 	chosen {
 		zephyr,console = &uart1;
 		zephyr,sram = &dram;
