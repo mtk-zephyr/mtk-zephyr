@@ -1,0 +1,28 @@
+# Copyright (c) 2026 MediaTek Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  MediaTek MT8188 watchdog, the timer of the top reset generation unit
+  (TOPRGU).
+
+  One timeout of 2 to 31 seconds in steps of 1/64 second.  On expiry the unit
+  resets the SoC.  It has no interrupt in this description, so a timeout
+  cannot call back before the reset.
+
+  The same block holds the subsystem reset lines (SWSYSRST), which other
+  drivers pulse; this binding describes only the watchdog.
+
+compatible: "mediatek,mt8188-wdt"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  mediatek,disable-extrst:
+    type: boolean
+    description: |
+      Clear the external reset output when the watchdog is started, so that
+      an expiry does not drive the reset pin.  Without this property the
+      driver leaves the setting the firmware made.
