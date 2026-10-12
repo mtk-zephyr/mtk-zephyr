@@ -29,6 +29,8 @@
 #define UART_OFFSET_SAMPLE_COUNT 0x0028 /* (RW) Sample count */
 #define UART_OFFSET_SAMPLE_POINT 0x002c /* (RW) Sample point */
 #define UART_OFFSET_AUTOBAUD     0x0030 /* (RO) Autobaud monitor */
+#define UART_OFFSET_ESCAPE_EN    0x0044 /* (RW) Escape character enable */
+#define UART_OFFSET_DMA_EN       0x004c /* (RW) DMA enable */
 #define UART_OFFSET_FRACDIV_L    0x0054 /* (RW) Fractional divider (LSB) */
 #define UART_OFFSET_FRACDIV_M    0x0058 /* (RW) Fractional divider (MSB) */
 #define UART_OFFSET_EFR          0x0098 /* (RW) Enhanced feature */
@@ -72,6 +74,7 @@
 #define UART_LCR_WORD_LEN_6_BITS (0x01)
 #define UART_LCR_WORD_LEN_7_BITS (0x02)
 #define UART_LCR_WORD_LEN_8_BITS (0x03)
+#define UART_LCR_CONF_MODE_B     (0xbf) /* Exposes EFR */
 
 /* LSR register mask and values */
 #define UART_LSR_TX_IDLE    (0x40) /* LSR [6:6] */
@@ -613,6 +616,28 @@ void uart_mtk_isr(const struct device *dev)
 }
 #endif
 
+/*
+ * Put back what another owner of the UART may have changed and this driver
+ * does not program elsewhere.  Linux's 8250_mtk, once it has had the port
+ * open, leaves RX and TX DMA enabled, in which mode the FIFO raises no RX
+ * interrupt, and the enhanced features on; it may also leave software flow
+ * control and its escape character, and interrupt enables.  The baud rate
+ * registers and the FIFO control are programmed in any case.
+ */
+static void reset_state(const struct device *dev)
+{
+	mem_addr_t base = DEVICE_MMIO_GET(dev);
+
+	sys_write32(UART_LCR_WORD_LEN_8_BITS, base + UART_OFFSET_LCR);
+	sys_write32(0U, base + UART_OFFSET_IER);
+	sys_write32(0U, base + UART_OFFSET_DMA_EN);
+	sys_write32(0U, base + UART_OFFSET_ESCAPE_EN);
+
+	sys_write32(UART_LCR_CONF_MODE_B, base + UART_OFFSET_LCR);
+	sys_write32(0U, base + UART_OFFSET_EFR);
+	sys_write32(UART_LCR_WORD_LEN_8_BITS, base + UART_OFFSET_LCR);
+}
+
 int uart_mtk_init(const struct device *dev)
 {
 	int ret;
@@ -627,6 +652,8 @@ int uart_mtk_init(const struct device *dev)
 		return ret;
 	}
 #endif
+
+	reset_state(dev);
 
 	sys_write32((uint32_t)(UART_FCR_RX_FIFO_1 | UART_FCR_TX_FIFO_4 | UART_FCR_CLR_TX_FIFO |
 			       UART_FCR_CLR_RX_FIFO | UART_FCR_FIFO_EN),
