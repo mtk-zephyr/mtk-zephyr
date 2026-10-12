@@ -59,6 +59,7 @@ config TEST_WDT_WINDOW_MIN_SUPPORTED
 
 config TEST_WDT_DEFAULT_WINDOW_MAX
 	int "Watchdog timeout of the test cases that do not test the window"
+	default 2000 if WDT_MT8188
 	default 500
 	help
 	  window.max, in milliseconds, of the timeouts installed by the test
@@ -75,6 +76,7 @@ config TEST_WDT_WINDOW_MAX_ALLOWED
 		SOC_FAMILY_MICROCHIP_PIC32CM_SG_GC
 	default 0xFFFFFFFF if SOC_IT51XXX
 	default 0x6667 if SOC_SERIES_M48X
+	default 0x7918 if WDT_MT8188
 	default 0xFFFFFFF
 	help
 	  Maximal value of the Watchdog timeout passed in the
@@ -89,6 +91,7 @@ config TEST_WDT_OPT_PAUSE_IN_SLEEP_SUPPORTED
 
 config TEST_WDT_OPT_PAUSE_HALTED_BY_DBG_SUPPORTED
 	bool "Watchdog supports option that pause timer when core is halted by the debugger"
+	default n if WDT_MT8188
 	default y
 	help
 	  Set this Kconfig to 'y' if wdt_setup() can be called with
