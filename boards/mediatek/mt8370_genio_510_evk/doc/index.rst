@@ -140,7 +140,8 @@ hardware fallback.
 
 With the node enabled, ``CONFIG_HWINFO`` reports the cause of the last reset
 through :c:func:`hwinfo_get_reset_cause`, as the unit's status register records
-it at boot: ``RESET_WATCHDOG`` after a watchdog expiry and ``RESET_SOFTWARE``
+it at boot: ``RESET_POR`` after a power-on, which for an inmate is the cell's
+first start, ``RESET_WATCHDOG`` after a watchdog expiry and ``RESET_SOFTWARE``
 after a software reset.
 
 .. important::

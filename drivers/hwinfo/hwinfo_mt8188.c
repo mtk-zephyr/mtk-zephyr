@@ -15,13 +15,13 @@
 /*
  * The status register of the top reset generation unit records what caused
  * the last reset.  Only the two causes below have a hwinfo flag; the other
- * bits report firmware-level causes.
+ * bits report firmware-level causes.  A power-on clears the whole register.
  */
 #define WDT_STA            0x0c
 #define WDT_STA_HW_WDT_RST BIT(31)
 #define WDT_STA_SW_WDT_RST BIT(30)
 
-#define SUPPORTED_CAUSES (RESET_WATCHDOG | RESET_SOFTWARE)
+#define SUPPORTED_CAUSES (RESET_POR | RESET_WATCHDOG | RESET_SOFTWARE)
 
 /* The causes read at boot; clearing them changes this copy only. */
 static atomic_t reset_cause;
@@ -56,6 +56,9 @@ static int hwinfo_mt8188_init(void)
 	device_map(&base, DT_INST_REG_ADDR(0), DT_INST_REG_SIZE(0), K_MEM_CACHE_NONE);
 	status = sys_read32(base + WDT_STA);
 
+	if (status == 0U) {
+		cause = RESET_POR;
+	}
 	if ((status & WDT_STA_HW_WDT_RST) != 0U) {
 		cause |= RESET_WATCHDOG;
 	}
