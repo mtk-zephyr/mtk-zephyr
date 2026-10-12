@@ -136,6 +136,11 @@ resets the SoC. The unit raises no interrupt first, so a timeout cannot have a
 callback. :zephyr_file:`samples/subsys/task_wdt` uses it as the task watchdog's
 hardware fallback.
 
+With the node enabled, ``CONFIG_HWINFO`` reports the cause of the last reset
+through :c:func:`hwinfo_get_reset_cause`, as the unit's status register records
+it at boot: ``RESET_WATCHDOG`` after a watchdog expiry and ``RESET_SOFTWARE``
+after a software reset.
+
 .. important::
 
    No Jailhouse cell of mtk-jailhouse ``mtk-v1.0.0`` provides the watchdog. The
