@@ -30,7 +30,7 @@
 #endif
 
 /* Common for all targets: */
-#define DEFAULT_WINDOW_MAX (500U)
+#define DEFAULT_WINDOW_MAX (CONFIG_TEST_WDT_DEFAULT_WINDOW_MAX)
 #define DEFAULT_WINDOW_MIN (0U)
 
 #if defined(CONFIG_TEST_WDT_FLAG_RESET_NONE_SUPPORTED)
@@ -592,6 +592,9 @@ ZTEST(wdt_coverage, test_08b_wdt_disable_check_not_firing)
 	/* Skip this test because wdt_disable() is NOT supported. */
 	Z_TEST_SKIP_IFNDEF(CONFIG_TEST_WDT_DISABLE_SUPPORTED);
 
+	/* Skip this test because it detects a firing through a timeout callback. */
+	Z_TEST_SKIP_IFDEF(CONFIG_HAS_WDT_NO_CALLBACKS);
+
 	/* When test fails, watchdog sets m_test_08b_value to TEST_08B_TAG in WDT callback
 	 * wdt_test_08b_cb. Then, target is reset. Check value of m_test_08b_value to prevent reset
 	 * loop on this test.
@@ -689,6 +692,9 @@ ZTEST(wdt_coverage, test_08d_wdt_disable_check_timeouts_uninstalled)
 
 	/* Skip this test because wdt_disable() is NOT supported. */
 	Z_TEST_SKIP_IFNDEF(CONFIG_TEST_WDT_DISABLE_SUPPORTED);
+
+	/* Skip this test because it detects a firing through a timeout callback. */
+	Z_TEST_SKIP_IFDEF(CONFIG_HAS_WDT_NO_CALLBACKS);
 
 	/* m_test_08d_A_value is set to TEST_08D_A_TAG in callback wdt_test_08d_A_cb */
 	if (m_test_08d_A_value == TEST_08D_A_TAG) {
