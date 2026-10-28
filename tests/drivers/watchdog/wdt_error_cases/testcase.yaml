@@ -24,6 +24,8 @@ tests:
       - raytac_an54lq_db_15/nrf54l15/cpuapp
       - sam_e54_xpro
       - pic32cx_sg41_cult
+      - mt8370_genio_510_evk/mt8188/a55
+      - mt8390_genio_700_evk/mt8188/a55
     integration_platforms:
       - nrf54l15dk/nrf54l15/cpuapp
       - ophelia4ev/nrf54l15/cpuapp
