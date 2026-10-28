@@ -40,7 +40,6 @@
 #define WDT_OPT_PAUSE_IN_SLEEP_REQUIRES_PM        BIT(9)
 
 /* Common for all targets: */
-#define DEFAULT_WINDOW_MAX (500U)
 #define DEFAULT_WINDOW_MIN (0U)
 
 /* Align tests to the specific target: */
@@ -99,6 +98,11 @@
 #define MAX_INSTALLABLE_TIMEOUTS (8)
 #define WDT_WINDOW_MAX_ALLOWED   (0xFFFFFFFFU)
 #define DEFAULT_OPTIONS          (WDT_OPT_PAUSE_IN_SLEEP)
+#endif
+
+/* Timeout of the test cases that do not test the window, unless set above. */
+#ifndef DEFAULT_WINDOW_MAX
+#define DEFAULT_WINDOW_MAX (500U)
 #endif
 
 static const struct device *const wdt = DEVICE_DT_GET(WDT_NODE);
@@ -659,6 +663,11 @@ ZTEST(wdt_coverage, test_08b_wdt_disable_check_not_firing)
 		ztest_test_skip();
 	}
 
+	if (IS_ENABLED(CONFIG_HAS_WDT_NO_CALLBACKS)) {
+		/* Skip this test because it detects a firing through a timeout callback. */
+		ztest_test_skip();
+	}
+
 	/* When test fails, watchdog sets m_test_08b_value to TEST_08B_TAG in WDT callback
 	 * wdt_test_08b_cb. Then, target is reset. Check value of m_test_08b_value to prevent reset
 	 * loop on this test.
@@ -758,6 +767,11 @@ ZTEST(wdt_coverage, test_08d_wdt_disable_check_timeouts_uninstalled)
 
 	if (!(WDT_TEST_FLAGS & WDT_DISABLE_SUPPORTED)) {
 		/* Skip this test because wdt_disable() is NOT supported. */
+		ztest_test_skip();
+	}
+
+	if (IS_ENABLED(CONFIG_HAS_WDT_NO_CALLBACKS)) {
+		/* Skip this test because it detects a firing through a timeout callback. */
 		ztest_test_skip();
 	}
 

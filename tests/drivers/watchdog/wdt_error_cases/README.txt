@@ -77,3 +77,8 @@ Follow these guidelines when enabling test execution on a new target.
 
 7. When wdt_feed() can stall, extend WDT_TEST_FLAGS with:
    #define WDT_TEST_FLAGS (... | WDT_FEED_CAN_STALL)
+
+8. The test cases that do not test the timeout value install timeouts of
+   500 ms.  When the watchdog's shortest timeout is longer, set it in the
+   target's block, f.e.:
+   #define DEFAULT_WINDOW_MAX (2000U)
