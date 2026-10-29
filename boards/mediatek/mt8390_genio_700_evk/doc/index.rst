@@ -138,17 +138,16 @@ hardware fallback.
 
 With the node enabled, ``CONFIG_HWINFO`` reports the cause of the last reset
 through :c:func:`hwinfo_get_reset_cause`, as the unit's status register records
-it at boot: ``RESET_POR`` after a power-on, which for an inmate is the cell's
-first start, ``RESET_WATCHDOG`` after a watchdog expiry and ``RESET_SOFTWARE``
-after a software reset.
+it at boot: ``RESET_POR`` after a power-on, which for an inmate is its first
+start or a start after a run that did not fail, ``RESET_WATCHDOG`` after a
+watchdog expiry and ``RESET_SOFTWARE`` after a software reset.
 
 .. important::
 
-   No Jailhouse cell of mtk-jailhouse ``mtk-v1.0.0`` provides the watchdog. The
-   plain cells do not grant the block, and the inmate is stopped on the first
-   access. The AFE cells grant the whole block, which Linux uses as its own
-   watchdog, so an image built with this snippet would arm the SoC's watchdog;
-   do not run it there.
+   In a cell of `mtk-jailhouse`_, the watchdog is the cell's own: the
+   hypervisor gives every Zephyr cell one at the unit's address, and its expiry
+   fails the cell rather than resetting the SoC. The root cell keeps the SoC's
+   watchdog.
 
 Programming and Debugging
 *************************
@@ -196,11 +195,12 @@ Prerequisites
 =============
 
 An `IoT Yocto <https://genio.mediatek.com/doc/iot-yocto/latest/>`_ image on the
-target. Jailhouse, its kernel module and the cell configurations for this board
-are all part of that image, so no separate build is needed.
+target with the hypervisor of `mtk-jailhouse`_ ``v26.1`` (based on Jailhouse
+0.12), its kernel module and the cell configurations for this board; the Genio
+Jailhouse and Zephyr user guide describes how to build it.
 
-The instructions below were verified against IoT Yocto ``26.0-release``, running
-Jailhouse 0.12 on a 6.6 kernel.
+The instructions below were verified on IoT Yocto ``26.0-release``, 6.6 kernel,
+with mtk-jailhouse ``v26.1``.
 
 Building
 ========
@@ -229,7 +229,9 @@ On the target, with the Zephyr binary in the current directory:
 
 The image does not start the hypervisor by itself, so ``jailhouse enable`` is
 needed once after each boot of the target before any inmate can be created.
-Subsequent runs need only the last three commands.
+Subsequent runs need only the last three commands. Each cell is named after its
+file without the board prefix, ``zephyr`` for ``genio-700-evk-zephyr.cell``,
+and the ``jailhouse cell`` commands after ``create`` take that name.
 
 .. important::
 
@@ -253,7 +255,8 @@ built for ``mt8390_genio_700_evk/mt8188/a55`` also runs in the
 ``genio-700-evk-zephyr-a78`` cell, on the Cortex-A78 CPU 7. The ``a55`` in
 the board target names the cluster the build is tuned for, not a requirement.
 Create ``genio-700-evk-zephyr-a78.cell`` instead of
-``genio-700-evk-zephyr.cell`` when loading it.
+``genio-700-evk-zephyr.cell``, and use its name, ``zephyr-a78``, in the other
+``jailhouse cell`` commands.
 
 Running on two cores
 --------------------
@@ -268,21 +271,22 @@ CPU 3, under the ``genio-700-evk-zephyr-smp`` cell:
    :goals: build
 
 Load it as above, creating ``genio-700-evk-zephyr-smp.cell`` instead of
-``genio-700-evk-zephyr.cell``. The cell starts CPU 2 at ``0x8000``, and Zephyr
-starts CPU 3 with PSCI ``CPU_ON``. The hypervisor accepts PSCI calls only by
-SMC, which is how the SoC devicetree calls the firmware; an HVC that is not a
-hypervisor call stops the cell. The cell grants the same
-memory window, console and GPIO pins as the plain one. For audio, build with
-the ``mtk-afe`` snippet as well and create ``genio-700-evk-zephyr-afe-smp.cell``,
-which also grants the AFE.
+``genio-700-evk-zephyr.cell`` and using its name, ``zephyr-smp``. The cell
+starts CPU 2 at ``0x8000``, and Zephyr starts CPU 3 with PSCI ``CPU_ON``. The
+hypervisor accepts PSCI calls only by SMC, which is how the SoC devicetree
+calls the firmware; an HVC that is not a hypervisor call stops the cell. The
+cell grants the same memory window, console and GPIO pins as the plain one.
+For audio, build with the ``mtk-afe`` snippet as well and create
+``genio-700-evk-zephyr-afe-smp.cell`` (``zephyr-afe-smp``), which also grants
+the AFE.
 
 .. important::
 
-   The SMP cells, and the hypervisor support they need, come with release
-   ``mtk-v1.0.0`` of `mtk-jailhouse`_ or later. An older hypervisor does not
-   emulate the pending state of SGIs, and an SMP image can then deadlock at
-   start-up: while waiting for a spinlock, Zephyr polls the pending state of an
-   SGI from the other core, which such a hypervisor never reports as pending.
+   The SMP cells, and the hypervisor support they need, come with
+   `mtk-jailhouse`_. A hypervisor that does not emulate the pending state of
+   SGIs lets an SMP image deadlock at start-up: while waiting for a spinlock,
+   Zephyr polls the pending state of an SGI from the other core, which such a
+   hypervisor never reports as pending.
 
 .. _mtk-jailhouse:
    https://github.com/mtk-jailhouse/jailhouse
@@ -301,10 +305,11 @@ case without a word:
   prints ``Failed to boot secondary CPU core 1 (MPID:0x200)``, then panics and
   halts, while the cell still reports ``running``.
 
-The variant enables CPU 2 and CPU 3 because those are the cores the SMP cells
-grant. For another core set, for example three cores or the two A78 cores, a
-cell that grants them is needed, and on the Zephyr side either another variant
-or an application overlay that enables the cores, with ``CONFIG_SMP=y``,
+The variant enables CPU 2 and CPU 3 because those are the cores the
+``zephyr-smp`` and ``zephyr-afe-smp`` cells grant. Another core set needs a cell
+that grants it, such as ``genio-700-evk-zephyr-a78-smp`` for the two A78 cores,
+CPU 6 and CPU 7, and on the Zephyr side either another variant or an
+application overlay that enables the cores, with ``CONFIG_SMP=y``,
 ``CONFIG_MP_MAX_NUM_CPUS`` and ``CONFIG_PM_CPU_OPS=y`` in the application's
 configuration.
 
