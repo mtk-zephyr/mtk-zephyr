@@ -8,6 +8,12 @@ if SOC_MT8188_A55
 config GIC_SAFE_CONFIG
 	default y
 
+# Zephyr runs on these cores in Non-secure EL1, with TF-A at EL3.  This also
+# makes arm_gic_irq_enable() route each SPI to the CPU that enables it, so the
+# routing does not depend on what a previous Jailhouse cell left there.
+config ARMV8_A_NS
+	default y
+
 # Covers the full GICv3 SPI range; the highest INTID this die can raise is
 # below 1024 and the software ISR table is sized from this value.
 config NUM_IRQS
